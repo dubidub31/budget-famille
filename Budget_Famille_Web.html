@@ -1,0 +1,3573 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Budget Famille</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,450;9..144,560;9..144,650&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --cream: #FBF8F3;
+  --cream-deep: #F3EEE3;
+  --ink: #2C3E35;
+  --ink-soft: #5A6B61;
+  --line: #E3DDCD;
+  --card: #FFFFFF;
+  --terracotta: #C97B4A;
+  --terracotta-soft: #F2DDCB;
+  --prune: #8B5A6B;
+  --prune-soft: #EEDCE2;
+  --ambre: #C99A3A;
+  --ambre-soft: #F3E6C4;
+  --sapin: #3F6B57;
+  --sapin-soft: #DCE9E1;
+  --rouge: #B5524A;
+  --shadow: 0 1px 2px rgba(44,62,53,0.04), 0 8px 24px -8px rgba(44,62,53,0.10);
+  --radius-lg: 22px;
+  --radius-md: 14px;
+  --radius-sm: 9px;
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--cream);
+  color:var(--ink);
+  font-family:'Inter',sans-serif;
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+}
+
+.display{font-family:'Fraunces',serif;}
+
+/* ---------- Top bar ---------- */
+.topbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:22px 36px;
+  border-bottom:1px solid var(--line);
+  position:sticky;
+  top:0;
+  background:rgba(251,248,243,0.92);
+  backdrop-filter:blur(6px);
+  z-index:40;
+}
+.brand{
+  display:flex;
+  align-items:baseline;
+  gap:10px;
+}
+.brand-mark{
+  font-family:'Fraunces',serif;
+  font-weight:560;
+  font-size:22px;
+  color:var(--ink);
+}
+.brand-mark span{color:var(--terracotta);}
+.month-switcher{
+  display:flex;
+  align-items:center;
+  gap:14px;
+}
+.month-switcher select{
+  font-family:'Fraunces',serif;
+  font-size:19px;
+  font-weight:560;
+  color:var(--ink);
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:var(--radius-sm);
+  padding:8px 14px;
+  cursor:pointer;
+}
+.btn{
+  font-family:'Inter',sans-serif;
+  font-weight:600;
+  font-size:13.5px;
+  border:none;
+  border-radius:999px;
+  padding:10px 18px;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  transition:transform .12s ease, box-shadow .12s ease, background .15s ease;
+  white-space:nowrap;
+}
+.btn:hover{transform:translateY(-1px);}
+.btn:active{transform:translateY(0);}
+.btn-primary{background:var(--ink); color:var(--cream);}
+.btn-primary:hover{background:#23332c;}
+.btn-secondary{background:var(--card); color:var(--ink); border:1px solid var(--line);}
+.btn-secondary:hover{background:var(--cream-deep);}
+.btn-ghost{background:transparent;color:var(--ink-soft);}
+.btn-ghost:hover{background:var(--cream-deep); color:var(--ink);}
+.btn-sm{padding:7px 13px;font-size:12.5px;}
+.topbar-actions{display:flex;gap:10px;align-items:center;}
+
+/* ---------- Layout ---------- */
+.shell{max-width:1180px;margin:0 auto;padding:32px 36px 80px;}
+
+.hero{
+  display:grid;
+  grid-template-columns:1.1fr 1fr;
+  gap:28px;
+  margin-bottom:34px;
+}
+@media (max-width:880px){.hero{grid-template-columns:1fr;}}
+
+.solde-card{
+  background:linear-gradient(155deg, var(--ink) 0%, #233830 100%);
+  border-radius:var(--radius-lg);
+  padding:34px 34px 30px;
+  color:var(--cream);
+  position:relative;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  min-height:220px;
+}
+.solde-card::before{
+  content:"";
+  position:absolute;
+  right:-60px;
+  top:-60px;
+  width:240px;
+  height:240px;
+  border-radius:50%;
+  background:radial-gradient(circle, rgba(201,123,74,0.18), transparent 70%);
+}
+.solde-label{
+  font-size:12.5px;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:#B9C9BF;
+  font-weight:600;
+}
+.solde-value{
+  font-family:'Fraunces',serif;
+  font-weight:450;
+  font-size:58px;
+  line-height:1;
+  margin:10px 0 4px;
+  letter-spacing:-0.01em;
+}
+.solde-value.negative{color:#E3AA9E;}
+.solde-sub{font-size:13.5px;color:#A9BBB0;}
+.solde-progress-row{
+  display:flex;
+  gap:18px;
+  margin-top:22px;
+}
+.mini-stat{flex:1;}
+.mini-stat-label{font-size:11.5px;color:#9FB3A7;text-transform:uppercase;letter-spacing:.05em;font-weight:600;}
+.mini-stat-value{font-family:'Fraunces',serif;font-size:19px;margin-top:3px;}
+
+.status-card{
+  background:var(--card);
+  border-radius:var(--radius-lg);
+  padding:28px 30px;
+  box-shadow:var(--shadow);
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+}
+.status-title{
+  font-family:'Fraunces',serif;
+  font-size:19px;
+  font-weight:560;
+  margin:0 0 4px;
+}
+.status-sub{font-size:13px;color:var(--ink-soft); margin-bottom:18px;}
+.progress-track{
+  height:10px;
+  background:var(--cream-deep);
+  border-radius:99px;
+  overflow:hidden;
+  margin-bottom:8px;
+}
+.progress-fill{
+  height:100%;
+  background:var(--terracotta);
+  border-radius:99px;
+  transition:width .4s ease;
+}
+.progress-caption{font-size:12.5px;color:var(--ink-soft);}
+.status-cta{margin-top:18px;}
+
+/* ---------- Section cards (categories) ---------- */
+.sections-grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:22px;
+  margin-bottom:34px;
+}
+@media (max-width:880px){.sections-grid{grid-template-columns:1fr;}}
+
+.section-card{
+  background:var(--card);
+  border-radius:var(--radius-lg);
+  box-shadow:var(--shadow);
+  overflow:hidden;
+}
+.section-head{
+  padding:18px 24px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+.section-head .tag{
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  font-weight:700;
+  padding:5px 11px;
+  border-radius:99px;
+}
+.section-revenus .section-head{background:var(--sapin-soft);}
+.section-revenus .tag{background:var(--sapin); color:#fff;}
+.section-fixes .section-head{background:var(--prune-soft);}
+.section-fixes .tag{background:var(--prune); color:#fff;}
+.section-variables .section-head{background:var(--terracotta-soft);}
+.section-variables .tag{background:var(--terracotta); color:#fff;}
+.section-epargne .section-head{background:var(--ambre-soft);}
+.section-epargne .tag{background:var(--ambre); color:#fff;}
+
+.section-totals{display:flex; gap:22px; align-items:baseline;}
+.section-total-real{font-family:'Fraunces',serif; font-size:22px;}
+.section-total-prev{font-size:12.5px; color:var(--ink-soft);}
+
+.cat-list{padding:6px 10px 14px;}
+.cat-row{
+  display:grid;
+  grid-template-columns:1fr auto auto;
+  gap:10px;
+  align-items:center;
+  padding:9px 14px;
+  border-radius:var(--radius-sm);
+}
+.cat-row:hover{background:var(--cream-deep);}
+.cat-name{font-size:13.5px; color:var(--ink);}
+.cat-prev-input{
+  width:78px;
+  text-align:right;
+  border:1px solid var(--line);
+  border-radius:7px;
+  padding:5px 7px;
+  font-family:'Inter',sans-serif;
+  font-size:12.5px;
+  color:var(--ink-soft);
+  background:var(--cream);
+}
+.cat-prev-input:focus{outline:2px solid var(--terracotta); outline-offset:1px;}
+.cat-real{
+  width:78px;
+  text-align:right;
+  font-size:13px;
+  font-weight:600;
+  color:var(--ink);
+}
+.cat-real.zero{color:var(--ink-soft); font-weight:400;}
+
+/* ---------- Charts row ---------- */
+.charts-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:22px;
+  margin-bottom:34px;
+}
+@media (max-width:880px){.charts-grid{grid-template-columns:1fr;}}
+.chart-card{
+  background:var(--card);
+  border-radius:var(--radius-lg);
+  box-shadow:var(--shadow);
+  padding:24px 26px 18px;
+}
+.chart-title{
+  font-family:'Fraunces',serif;
+  font-size:17px;
+  font-weight:560;
+  margin:0 0 16px;
+}
+
+/* ---------- Operations table ---------- */
+.ops-card{
+  background:var(--card);
+  border-radius:var(--radius-lg);
+  box-shadow:var(--shadow);
+  padding:6px 0 16px;
+}
+.ops-head{
+  padding:22px 26px 16px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:12px;
+}
+.ops-title{font-family:'Fraunces',serif; font-size:19px; font-weight:560; margin:0;}
+.ops-filters{display:flex; gap:8px;}
+.chip{
+  font-size:12px;
+  font-weight:600;
+  padding:6px 13px;
+  border-radius:99px;
+  background:var(--cream-deep);
+  color:var(--ink-soft);
+  cursor:pointer;
+  border:1px solid transparent;
+}
+.chip.active{background:var(--ink); color:var(--cream);}
+
+table.ops-table{width:100%; border-collapse:collapse;}
+table.ops-table th{
+  text-align:left;
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+  color:var(--ink-soft);
+  font-weight:600;
+  padding:8px 26px;
+  border-bottom:1px solid var(--line);
+}
+table.ops-table td{
+  padding:11px 26px;
+  font-size:13.5px;
+  border-bottom:1px solid var(--cream-deep);
+}
+table.ops-table tr:last-child td{border-bottom:none;}
+.amount-cell{text-align:right; font-weight:600; font-variant-numeric:tabular-nums;}
+.amount-cell.credit{color:var(--sapin);}
+.amount-cell.debit{color:var(--ink);}
+.cat-pill{
+  font-size:11.5px;
+  padding:4px 10px;
+  border-radius:99px;
+  background:var(--cream-deep);
+  color:var(--ink-soft);
+  display:inline-block;
+}
+.cat-pill.empty{
+  background:var(--terracotta-soft);
+  color:var(--terracotta);
+  font-weight:600;
+  cursor:pointer;
+}
+.row-classify-btn{
+  font-size:12px;
+  font-weight:600;
+  color:var(--terracotta);
+  cursor:pointer;
+  background:none;
+  border:none;
+  padding:4px 8px;
+}
+
+.empty-state{
+  padding:50px 30px;
+  text-align:center;
+  color:var(--ink-soft);
+}
+.empty-state .display{font-size:20px; color:var(--ink); margin-bottom:6px;}
+
+/* ---------- Modal: classification popup ---------- */
+.modal-overlay{
+  position:fixed; inset:0;
+  background:rgba(44,62,53,0.55);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:100;
+  padding:24px;
+}
+.modal-overlay.open{display:flex;}
+.modal-card{
+  background:var(--cream);
+  border-radius:26px;
+  width:100%;
+  max-width:640px;
+  max-height:88vh;
+  display:flex;
+  flex-direction:column;
+  box-shadow:0 30px 60px -20px rgba(0,0,0,0.35);
+  overflow:hidden;
+}
+.modal-head{
+  padding:22px 28px 18px;
+  border-bottom:1px solid var(--line);
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:14px;
+}
+.modal-progress{font-size:11.5px; color:var(--ink-soft); font-weight:600; text-transform:uppercase; letter-spacing:.05em;}
+.modal-op-libelle{font-family:'Fraunces',serif; font-size:21px; font-weight:560; margin:6px 0 2px;}
+.modal-op-detail{font-size:12.5px; color:var(--ink-soft);}
+.modal-op-amount{
+  font-family:'Fraunces',serif;
+  font-size:30px;
+  text-align:right;
+  white-space:nowrap;
+}
+.modal-op-amount.credit{color:var(--sapin);}
+.modal-op-amount.debit{color:var(--ink);}
+.modal-close{
+  background:none; border:none; cursor:pointer;
+  color:var(--ink-soft); font-size:20px;
+  position:absolute; top:18px; right:22px;
+}
+
+.modal-body{padding:18px 28px 8px; overflow-y:auto; flex:1;}
+.cat-section-title{
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  font-weight:700;
+  margin:18px 0 8px;
+  padding-left:2px;
+}
+.cat-section-title:first-child{margin-top:0;}
+.cat-section-title.t-revenus{color:var(--sapin);}
+.cat-section-title.t-fixes{color:var(--prune);}
+.cat-section-title.t-variables{color:var(--terracotta);}
+.cat-section-title.t-epargne{color:var(--ambre);}
+
+.cat-grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:8px;
+  margin-bottom:6px;
+}
+.cat-stamp{
+  border:1.5px solid var(--line);
+  background:var(--card);
+  border-radius:var(--radius-sm);
+  padding:10px 13px;
+  font-size:13px;
+  text-align:left;
+  cursor:pointer;
+  transition:all .12s ease;
+  color:var(--ink);
+  line-height:1.25;
+}
+.cat-stamp:hover{border-color:var(--terracotta); background:var(--terracotta-soft); transform:scale(1.01);}
+.cat-stamp.t-revenus:hover{border-color:var(--sapin); background:var(--sapin-soft);}
+.cat-stamp.t-fixes:hover{border-color:var(--prune); background:var(--prune-soft);}
+.cat-stamp.t-epargne:hover{border-color:var(--ambre); background:var(--ambre-soft);}
+
+.modal-foot{
+  padding:16px 28px 22px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  border-top:1px solid var(--line);
+}
+
+/* ---------- Toast ---------- */
+.toast{
+  position:fixed;
+  bottom:26px;
+  left:50%;
+  transform:translateX(-50%) translateY(20px);
+  background:var(--ink);
+  color:var(--cream);
+  padding:13px 22px;
+  border-radius:99px;
+  font-size:13.5px;
+  font-weight:500;
+  box-shadow:0 12px 30px -10px rgba(0,0,0,0.4);
+  opacity:0;
+  transition:all .25s ease;
+  z-index:200;
+  pointer-events:none;
+}
+.toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+/* ---------- New month modal ---------- */
+.simple-modal-card{
+  background:var(--cream);
+  border-radius:22px;
+  width:100%;
+  max-width:420px;
+  padding:28px;
+  box-shadow:0 30px 60px -20px rgba(0,0,0,0.35);
+}
+.simple-modal-card h3{font-family:'Fraunces',serif; font-size:20px; margin:0 0 6px;}
+.simple-modal-card p{font-size:13.5px; color:var(--ink-soft); margin:0 0 18px;}
+.simple-modal-card select, .simple-modal-card input{
+  width:100%;
+  padding:10px 13px;
+  border:1px solid var(--line);
+  border-radius:var(--radius-sm);
+  font-family:'Inter',sans-serif;
+  font-size:14px;
+  margin-bottom:14px;
+  background:var(--card);
+}
+.simple-modal-actions{display:flex; justify-content:flex-end; gap:10px; margin-top:6px;}
+
+/* ---------- Solde compte début/fin ---------- */
+.solde-compte-row{
+  display:flex;
+  gap:14px;
+  margin:18px 0 4px;
+}
+.solde-compte-field{flex:1;}
+.solde-compte-field label{
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+  color:var(--ink-soft);
+  font-weight:600;
+  display:block;
+  margin-bottom:5px;
+}
+.solde-compte-field input{
+  width:100%;
+  border:1px solid var(--line);
+  border-radius:var(--radius-sm);
+  padding:8px 10px;
+  font-family:'Inter',sans-serif;
+  font-size:13.5px;
+  background:var(--cream);
+  color:var(--ink);
+}
+.solde-compte-field input:focus{outline:2px solid var(--terracotta); outline-offset:1px;}
+.manual-tag{
+  font-size:9.5px;
+  background:var(--ambre-soft);
+  color:var(--ambre);
+  padding:1px 6px;
+  border-radius:99px;
+  text-transform:none;
+  letter-spacing:0;
+  margin-left:5px;
+  font-weight:700;
+}
+
+/* ---------- Ops table: tri & filtres ---------- */
+.ops-table-scroll{overflow-x:auto;}
+table.ops-table th{position:relative; white-space:nowrap; user-select:none;}
+.th-sort{cursor:pointer;}
+.th-sort:hover{color:var(--ink);}
+.th-filter-btn{
+  cursor:pointer;
+  margin-left:5px;
+  color:var(--ink-soft);
+  font-size:10px;
+  position:relative;
+}
+.th-filter-btn.active{color:var(--terracotta); font-weight:700;}
+.filter-dot{
+  display:inline-block;
+  width:6px; height:6px;
+  border-radius:50%;
+  background:var(--terracotta);
+  margin-left:3px;
+  vertical-align:middle;
+}
+.filter-menu{
+  position:absolute;
+  top:100%;
+  left:0;
+  margin-top:4px;
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:var(--radius-sm);
+  box-shadow:0 14px 30px -10px rgba(0,0,0,0.18);
+  max-height:260px;
+  overflow-y:auto;
+  z-index:50;
+  min-width:200px;
+  text-transform:none;
+  letter-spacing:0;
+  font-weight:400;
+}
+.filter-menu-item{
+  padding:8px 14px;
+  font-size:12.5px;
+  color:var(--ink);
+  cursor:pointer;
+  white-space:nowrap;
+}
+.filter-menu-item:hover{background:var(--cream-deep);}
+.filter-menu-item.active{background:var(--terracotta-soft); color:var(--terracotta); font-weight:600;}
+.filter-menu-clear{border-bottom:1px solid var(--line); font-style:italic; color:var(--ink-soft);}
+
+.ops-subtotal-bar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:12px 26px;
+  background:var(--cream-deep);
+  border-top:1px solid var(--line);
+  border-bottom:1px solid var(--line);
+}
+.ops-subtotal-label{
+  font-size:12px;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+  font-weight:600;
+  color:var(--ink-soft);
+}
+.ops-subtotal-value{font-size:19px;}
+.ops-subtotal-value.credit{color:var(--sapin);}
+.ops-subtotal-value.debit{color:var(--ink);}
+
+.dropdown-wrap{position:relative; display:inline-block;}
+.dropdown-menu{
+  position:absolute;
+  top:calc(100% + 6px);
+  right:0;
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:var(--radius-sm);
+  box-shadow:0 16px 34px -12px rgba(0,0,0,0.22);
+  min-width:300px;
+  z-index:60;
+  overflow:hidden;
+}
+.dropdown-item{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:2px;
+  width:100%;
+  padding:11px 16px;
+  background:none;
+  border:none;
+  border-bottom:1px solid var(--line);
+  cursor:pointer;
+  text-align:left;
+  font-family:'Inter',sans-serif;
+}
+.dropdown-item:last-child{border-bottom:none;}
+.dropdown-item:hover{background:var(--cream-deep);}
+.dropdown-item-title{font-size:13px; font-weight:600; color:var(--ink);}
+.dropdown-item-sub{font-size:11.5px; color:var(--ink-soft); line-height:1.35;}
+
+.muted{color:var(--ink-soft); opacity:.6;}
+
+/* ---------- Cellule catégorie avec reset ---------- */
+.cat-pill-wrap{display:inline-flex; align-items:center; gap:5px;}
+.cat-pill.assigned{cursor:pointer;}
+.cat-pill.assigned:hover{background:var(--cream-deep);}
+.cat-reset-btn{
+  background:none;
+  border:none;
+  color:var(--ink-soft);
+  cursor:pointer;
+  font-size:11px;
+  padding:2px 4px;
+  border-radius:50%;
+  line-height:1;
+}
+.cat-reset-btn:hover{background:var(--prune-soft); color:var(--prune);}
+
+.inline-cat-select{
+  font-family:'Inter',sans-serif;
+  font-size:12.5px;
+  padding:6px 8px;
+  border:1.5px solid var(--terracotta);
+  border-radius:7px;
+  background:var(--card);
+  color:var(--ink);
+  max-width:260px;
+}
+
+/* ---------- Drill-down chart breadcrumb ---------- */
+.chart-breadcrumb{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-bottom:12px;
+  font-size:12.5px;
+}
+.chart-breadcrumb .crumb-back{
+  cursor:pointer;
+  color:var(--terracotta);
+  font-weight:600;
+}
+.chart-breadcrumb .crumb-back:hover{text-decoration:underline;}
+.chart-breadcrumb .crumb-current{color:var(--ink-soft);}
+
+/* ---------- Sélection multiple ---------- */
+.col-check{width:36px; padding-left:16px !important;}
+.op-checkbox{cursor:pointer; width:15px; height:15px; accent-color:var(--terracotta);}
+tr.row-selected td{background:var(--terracotta-soft) !important;}
+
+.selection-bar{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:10px 22px;
+  background:var(--terracotta-soft);
+  border-top:1px solid rgba(201,123,74,0.25);
+  border-bottom:1px solid rgba(201,123,74,0.25);
+  font-size:13px;
+  font-weight:600;
+  color:var(--terracotta);
+}
+
+.solde-encours-display{
+  font-size:20px;
+  padding:6px 0;
+  font-weight:600;
+}
+.solde-encours-display.credit{color:var(--sapin);}
+.solde-encours-display.debit{color:var(--rouge);}
+
+.synthese-total-row td{
+  font-weight:700;
+  background:var(--cream-deep);
+  border-top:1.5px solid var(--line);
+}
+.synthese-table th{white-space:nowrap;}
+
+/* ---------- Sync indicator ---------- */
+.sync-indicator{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  padding:4px 10px;
+  border-radius:99px;
+  border:1px solid var(--line);
+  background:var(--cream-deep);
+  font-size:12px;
+  white-space:nowrap;
+  user-select:none;
+  transition:background .15s;
+}
+.sync-indicator:hover{background:var(--card);}
+@keyframes spin{ to{ transform:rotate(360deg); } }
+
+.sync-menu-item{
+  padding:9px 16px;
+  cursor:pointer;
+  color:var(--ink);
+}
+.sync-menu-item:hover{background:var(--cream-deep);}
+
+footer.app-footer{
+  text-align:center;
+  padding:30px 0 50px;
+  color:var(--ink-soft);
+  font-size:12px;
+}
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+
+// ===== sync.js =====
+// =========================================================
+// SYNC.JS — Synchronisation automatique vers Google Sheets
+// =========================================================
+// Ce module ajoute une couche de sync au-dessus du localStorage.
+// localStorage reste la mémoire immédiate (réactivité inchangée).
+// Google Sheets est la source de vérité partagée entre les deux utilisateurs.
+//
+// Stratégie :
+//  - PULL automatique au chargement de la page (tire la dernière version du Sheet)
+//  - PUSH automatique debouncé (attend 1.5s d'inactivité avant d'envoyer)
+//  - En cas d'erreur réseau, on continue en local (pas de blocage)
+//  - Un indicateur visuel discret en topbar montre l'état de la sync
+
+// ---- Configuration (à renseigner avant d'utiliser l'app) ----
+const SYNC_CONFIG = {
+  apiUrl: "https://script.google.com/macros/s/AKfycbzFeCI6hrqxaKiXvQqsIkuoJszYFoEsB0XQHZU6tjunkFzhacikhinA6CPk1BEkkcBF/exec",
+  secret: "",          // À remplir par l'utilisateur dans la page de config
+  userName: "",        // Prénom de l'utilisateur courant (ex. "Cedric" ou "Votre femme")
+  enabled: false       // Activé seulement si secret + userName sont renseignés
+};
+
+// ---- État de la synchronisation ----
+let syncState = {
+  status: "idle",      // idle | syncing | ok | error | disabled
+  lastPush: null,      // timestamp ISO du dernier push réussi
+  lastPull: null,      // timestamp ISO du dernier pull réussi
+  lastUpdatedBy: null, // qui a fait le dernier push
+  debounceTimer: null, // timer du debounce
+  pendingPush: false   // un push est en attente
+};
+
+// ---- Debounce : déclenche un push 1.5s après la dernière modification ----
+function schedulePush(){
+  if(!SYNC_CONFIG.enabled) return;
+  if(syncState.status === "syncing") return; // ne pas empiler les pushs
+  syncState.pendingPush = true;
+  clearTimeout(syncState.debounceTimer);
+  syncState.debounceTimer = setTimeout(() => {
+    pushToSheets();
+  }, 1500);
+  updateSyncIndicator();
+}
+
+// ---- PUSH : envoie STATE entier vers le Sheet ----
+async function pushToSheets(){
+  if(!SYNC_CONFIG.enabled) return;
+  syncState.status = "syncing";
+  syncState.pendingPush = false;
+  updateSyncIndicator();
+
+  try {
+    const stateToSend = {
+      ...STATE,
+      __updatedBy: SYNC_CONFIG.userName,
+      __pushedAt: new Date().toISOString()
+    };
+
+    // On utilise application/x-www-form-urlencoded (pas de preflight CORS)
+    // plutôt que application/json qui déclencherait un OPTIONS bloqué par Apps Script
+    const body = new URLSearchParams({
+      action: "push",
+      secret: SYNC_CONFIG.secret,
+      updatedBy: SYNC_CONFIG.userName,
+      stateJson: JSON.stringify(stateToSend)
+    });
+
+    const response = await fetch(SYNC_CONFIG.apiUrl, {
+      method: "POST",
+      body: body,
+      redirect: "follow"
+    });
+
+    const text = await response.text();
+    let data;
+    try { data = JSON.parse(text); }
+    catch(e) { throw new Error("Réponse non-JSON : " + text.slice(0, 100)); }
+
+    if(data.ok){
+      syncState.status = "ok";
+      syncState.lastPush = data.timestamp;
+    } else {
+      console.error("Sync push échoué :", data.error);
+      syncState.status = "error";
+    }
+  } catch(err){
+    console.error("Sync push erreur réseau :", err);
+    syncState.status = "error";
+  }
+  updateSyncIndicator();
+}
+
+// ---- PULL : récupère la dernière version depuis le Sheet ----
+async function pullFromSheets(silent){
+  if(!SYNC_CONFIG.enabled) return null;
+  if(!silent){
+    syncState.status = "syncing";
+    updateSyncIndicator();
+  }
+
+  try {
+    const url = `${SYNC_CONFIG.apiUrl}?action=pull&secret=${encodeURIComponent(SYNC_CONFIG.secret)}`;
+    const response = await fetch(url, { redirect: "follow" });
+    const data = await response.json();
+
+    if(!data.ok){
+      console.error("Sync pull échoué :", data.error);
+      syncState.status = "error";
+      updateSyncIndicator();
+      return null;
+    }
+
+    syncState.lastPull = new Date().toISOString();
+    syncState.lastUpdatedBy = data.updatedBy;
+
+    if(!silent){
+      syncState.status = "ok";
+      updateSyncIndicator();
+    }
+
+    return data.state; // peut être null si aucune donnée encore
+
+  } catch(err){
+    console.error("Sync pull erreur réseau :", err);
+    syncState.status = "error";
+    updateSyncIndicator();
+    return null;
+  }
+}
+
+// ---- Chargement initial : tire depuis le Sheet, fusionne avec le local ----
+async function initSync(){
+  const configOk = loadSyncConfig();
+  if(!configOk){
+    syncState.status = "disabled";
+    updateSyncIndicator();
+    return;
+  }
+
+  syncState.status = "syncing";
+  updateSyncIndicator();
+
+  const remoteState = await pullFromSheets(true);
+
+  if(remoteState){
+    // Compare les horodatages pour savoir quelle version est la plus récente
+    const remoteTs = remoteState.__pushedAt ? new Date(remoteState.__pushedAt) : new Date(0);
+    const localTs  = STATE.__pushedAt      ? new Date(STATE.__pushedAt)       : new Date(0);
+
+    if(remoteTs > localTs){
+      // La version distante est plus récente : on l'adopte
+      Object.assign(STATE, remoteState);
+      // Nettoyage des champs internes de sync avant de les utiliser comme STATE
+      delete STATE.__updatedBy;
+      delete STATE.__pushedAt;
+      saveState(); // met à jour le localStorage local
+      render();
+      showToast(`Données synchronisées depuis le cloud (${syncState.lastUpdatedBy || "dernier auteur"}).`);
+    } else if(localTs > remoteTs){
+      // La version locale est plus récente (push en attente qui avait échoué ?)
+      // On repousse immédiatement pour remettre le Sheet à jour
+      await pushToSheets();
+      showToast("Données locales plus récentes : synchronisation vers le cloud.");
+    }
+    // Si égales (ou remoteTs === epoch), pas d'action nécessaire
+  }
+
+  syncState.status = "ok";
+  updateSyncIndicator();
+}
+
+// ---- Indicateur visuel dans la topbar ----
+function updateSyncIndicator(){
+  const el = document.getElementById("syncIndicator");
+  if(!el) return;
+
+  const icons = {
+    idle:     "☁",
+    syncing:  "↻",
+    ok:       "✓",
+    error:    "⚠",
+    disabled: "—"
+  };
+  const labels = {
+    idle:     "Sync en attente…",
+    syncing:  "Synchronisation…",
+    ok:       syncState.lastPush
+                ? "Synchronisé " + fmtTimeAgo(syncState.lastPush)
+                : "Synchronisé",
+    error:    "Erreur de sync",
+    disabled: "Sync désactivée"
+  };
+  const colors = {
+    idle:     "var(--ink-soft)",
+    syncing:  "var(--ambre)",
+    ok:       "var(--sapin)",
+    error:    "var(--rouge)",
+    disabled: "var(--ink-soft)"
+  };
+
+  const s = syncState.status;
+  el.innerHTML = `<span style="color:${colors[s]}">${icons[s]}</span> <span style="color:${colors[s]};font-size:11px;">${labels[s]}</span>`;
+
+  // Animer l'icône de rotation pendant la sync
+  if(s === "syncing"){
+    el.querySelector("span").style.display = "inline-block";
+    el.querySelector("span").style.animation = "spin 1s linear infinite";
+  }
+}
+
+function fmtTimeAgo(isoTs){
+  const diff = Math.round((Date.now() - new Date(isoTs)) / 1000);
+  if(diff < 5)   return "à l'instant";
+  if(diff < 60)  return `il y a ${diff}s`;
+  if(diff < 3600) return `il y a ${Math.round(diff/60)}min`;
+  return `il y a ${Math.round(diff/3600)}h`;
+}
+
+// ---- Rafraîchir le libellé "il y a Xmin" toutes les 30 secondes ----
+setInterval(() => {
+  if(syncState.status === "ok") updateSyncIndicator();
+}, 30000);
+
+// ---- Forcer un pull manuel (bouton dans l'UI) ----
+async function forcePull(){
+  syncState.status = "syncing";
+  updateSyncIndicator();
+  const remoteState = await pullFromSheets(false);
+  if(remoteState){
+    const remoteTs = remoteState.__pushedAt ? new Date(remoteState.__pushedAt) : new Date(0);
+    const localTs  = STATE.__pushedAt       ? new Date(STATE.__pushedAt)       : new Date(0);
+
+    if(remoteTs <= localTs){
+      showToast("Vos données locales sont déjà à jour.");
+      syncState.status = "ok";
+      updateSyncIndicator();
+      return;
+    }
+
+    const confirmMsg = syncState.lastUpdatedBy && syncState.lastUpdatedBy !== SYNC_CONFIG.userName
+      ? `${syncState.lastUpdatedBy} a modifié les données. Écraser vos données locales avec la version du cloud ?`
+      : "Écraser vos données locales avec la version du cloud ?";
+
+    if(!confirm(confirmMsg)) {
+      syncState.status = "ok";
+      updateSyncIndicator();
+      return;
+    }
+
+    Object.assign(STATE, remoteState);
+    delete STATE.__updatedBy;
+    delete STATE.__pushedAt;
+    saveState();
+    render();
+    showToast("Données rechargées depuis le cloud.");
+  }
+  syncState.status = "ok";
+  updateSyncIndicator();
+}
+
+// ---- Config : chargement / sauvegarde depuis localStorage ----
+const SYNC_CONFIG_KEY = "budget_famille_sync_config";
+
+function loadSyncConfig(){
+  try {
+    const saved = localStorage.getItem(SYNC_CONFIG_KEY);
+    if(saved){
+      const cfg = JSON.parse(saved);
+      if(cfg.secret && cfg.userName){
+        SYNC_CONFIG.secret   = cfg.secret;
+        SYNC_CONFIG.userName = cfg.userName;
+        SYNC_CONFIG.enabled  = true;
+        return true;
+      }
+    }
+  } catch(e){}
+  SYNC_CONFIG.enabled = false;
+  return false;
+}
+
+function saveSyncConfig(secret, userName){
+  SYNC_CONFIG.secret   = secret;
+  SYNC_CONFIG.userName = userName;
+  SYNC_CONFIG.enabled  = !!(secret && userName);
+  localStorage.setItem(SYNC_CONFIG_KEY, JSON.stringify({ secret, userName }));
+}
+
+// ---- Modale de configuration de la sync ----
+function ouvrirConfigSync(){
+  const overlay = document.createElement("div");
+  overlay.className = "modal-overlay open";
+  overlay.id = "syncConfigOverlay";
+
+  const secretActuel = SYNC_CONFIG.secret || "";
+  const userActuel   = SYNC_CONFIG.userName || "";
+
+  overlay.innerHTML = `
+    <div class="simple-modal-card" style="max-width:480px;">
+      <h3 class="display">Configuration de la synchronisation</h3>
+      <p style="font-size:13px; color:var(--ink-soft); margin-bottom:20px;">
+        Renseignez le secret partagé et votre prénom pour activer la synchronisation automatique
+        avec Google Sheets. Ces informations sont stockées localement sur cet ordinateur.
+      </p>
+      <div style="display:flex; flex-direction:column; gap:14px;">
+        <div>
+          <label style="font-size:11px; text-transform:uppercase; letter-spacing:.04em; font-weight:600; color:var(--ink-soft); display:block; margin-bottom:5px;">
+            Secret partagé
+          </label>
+          <input type="password" id="syncSecretInput" value="${escapeAttr(secretActuel)}"
+            placeholder="Le mot de passe configuré dans le script"
+            style="width:100%; border:1px solid var(--line); border-radius:8px; padding:9px 12px; font-size:13.5px; background:var(--cream); box-sizing:border-box;">
+        </div>
+        <div>
+          <label style="font-size:11px; text-transform:uppercase; letter-spacing:.04em; font-weight:600; color:var(--ink-soft); display:block; margin-bottom:5px;">
+            Votre prénom
+          </label>
+          <input type="text" id="syncUserInput" value="${escapeAttr(userActuel)}"
+            placeholder="ex. Cedric ou Votre femme"
+            style="width:100%; border:1px solid var(--line); border-radius:8px; padding:9px 12px; font-size:13.5px; background:var(--cream); box-sizing:border-box;">
+        </div>
+      </div>
+      <div style="margin-top:8px; font-size:12px; color:var(--ink-soft);">
+        L'URL de l'API est déjà configurée dans l'application.
+      </div>
+      <div class="simple-modal-actions" style="margin-top:22px;">
+        <button class="btn btn-ghost" id="cancelSyncConfig">Annuler</button>
+        ${SYNC_CONFIG.enabled
+          ? `<button class="btn btn-ghost" id="disableSyncBtn" style="color:var(--rouge);">Désactiver la sync</button>`
+          : ""}
+        <button class="btn btn-primary" id="saveSyncConfig">Activer la synchronisation</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  overlay.addEventListener("click", (e) => { if(e.target === overlay) overlay.remove(); });
+  overlay.querySelector("#cancelSyncConfig").addEventListener("click", () => overlay.remove());
+
+  const disableBtn = overlay.querySelector("#disableSyncBtn");
+  if(disableBtn){
+    disableBtn.addEventListener("click", () => {
+      saveSyncConfig("", "");
+      syncState.status = "disabled";
+      overlay.remove();
+      updateSyncIndicator();
+      showToast("Synchronisation désactivée.");
+    });
+  }
+
+  overlay.querySelector("#saveSyncConfig").addEventListener("click", async () => {
+    const secret   = overlay.querySelector("#syncSecretInput").value.trim();
+    const userName = overlay.querySelector("#syncUserInput").value.trim();
+    if(!secret || !userName){
+      alert("Veuillez renseigner les deux champs.");
+      return;
+    }
+    saveSyncConfig(secret, userName);
+    overlay.remove();
+    showToast("Configuration sauvegardée. Test de connexion en cours…");
+    await initSync();
+  });
+}
+
+// ===== data.js =====
+// =========================================================
+// DONNÉES DE RÉFÉRENCE
+// =========================================================
+
+const CATEGORIES = {
+  revenus: {
+    label: "Revenus",
+    short: "revenus",
+    items: [
+      "Abondement compte commun Cedric",
+      "Abondement compte commun Cyrille",
+      "Allocations sociales (CAF)",
+      "Autres (remboursement santé)",
+      "Autres (leboncoin, etc…)",
+      "Crédit d'impôts",
+      "Provenance épargne",
+      "Remboursement Cedric",
+      "Remboursement Cyrille",
+      "Remboursement Henner",
+      "Remboursement CPAM",
+      "Remboursement assurance burn out"
+    ]
+  },
+  fixes: {
+    label: "Dépenses fixes",
+    short: "fixes",
+    items: [
+      "Assurance",
+      "Electricité",
+      "Gaz",
+      "Eau",
+      "Mutuelle",
+      "Taxe foncière",
+      "Téléphone mobile Cedric",
+      "Internet",
+      "Abonnements TV et streaming (canal+, Spotify)",
+      "ALAE, cantine, centre de loisir",
+      "Ménage (salaire + cotisation URSSAF Emilie)",
+      "Frais bancaires"
+    ]
+  },
+  variables: {
+    label: "Dépenses variables",
+    short: "variables",
+    items: [
+      "Alimentation (inter, bio, boulangerie, etc…)",
+      "Hygiène courante (pharmacie)",
+      "Vêtements enfants",
+      "Fournitures rentrée scolaire",
+      "Frais de garde",
+      "Jouets, cadeaux enfants",
+      "Jouets, cadeaux autres",
+      "Carburant",
+      "Péage, stationnement, contravention",
+      "Dépenses santé non remboursées enfants",
+      "Livres",
+      "Cinéma, restaurant, gouters en ville…",
+      "Travaux maison, outillage",
+      "Appareils électroménagers",
+      "Meubles",
+      "Petits équipements",
+      "Sports et activités enfants",
+      "Medecin",
+      "Assurance voiture",
+      "Billets avion, train, bateau, loc voiture, hotels",
+      "Camping",
+      "Dépense perso Cyrille à rembourser",
+      "Dépense perso Cedric à rembourser",
+      "Autre"
+    ]
+  },
+  epargne: {
+    label: "Épargne fixe",
+    short: "epargne",
+    items: [
+      "Livret A enfants",
+      "Epargne pour assurance voitures (van + Yaris)",
+      "Epargne pour vacances",
+      "Epargne pour inscription activités enfants (karaté, scout, etc…)",
+      "Epargne Impots sur le revenus",
+      "Epargne imprévus"
+    ]
+  }
+};
+
+const MOIS_NOMS = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
+
+function moisLabel(key){
+  // key format: "2026-05"
+  const [annee, mois] = key.split("-");
+  return MOIS_NOMS[parseInt(mois,10)-1] + " " + annee;
+}
+
+function moisSuivantKey(key){
+  let [annee, mois] = key.split("-").map(Number);
+  mois += 1;
+  if(mois > 12){ mois = 1; annee += 1; }
+  return annee + "-" + String(mois).padStart(2,"0");
+}
+
+function categorieSection(nom){
+  for(const key in CATEGORIES){
+    if(CATEGORIES[key].items.includes(nom)) return key;
+  }
+  return null;
+}
+
+const OPERATIONS_MAI_2026 = [{"date": "2026-05-04", "libelle": "INTERMARCHE", "detail": "300426 CB****4138-", "sousCategorie": "Hyper/supermarche", "carte": "CB Cedric", "montant": -6.54, "sens": "debit", "categorie": null, "id": "op_2026-05_001"}, {"date": "2026-05-04", "libelle": "selas pharmacie31cugnaux", "detail": "300426 CB****2622-", "sousCategorie": "Pharmacie", "carte": "CB Cyrille", "montant": -38.47, "sens": "debit", "categorie": null, "id": "op_2026-05_002"}, {"date": "2026-05-04", "libelle": "DR PH. RAYNAL 31CUGNAUX", "detail": "300426 CB****2622-", "sousCategorie": "Consultation medicale", "carte": "CB Cyrille", "montant": -30.0, "sens": "debit", "categorie": null, "id": "op_2026-05_003"}, {"date": "2026-05-04", "libelle": "selas pharmacie31cugnaux", "detail": "300426 CB****2622-", "sousCategorie": "Pharmacie", "carte": "CB Cyrille", "montant": -9.9, "sens": "debit", "categorie": null, "id": "op_2026-05_004"}, {"date": "2026-05-04", "libelle": "PHARMACIE AGORA", "detail": "300426 CB****2622-", "sousCategorie": "Pharmacie", "carte": "CB Cyrille", "montant": -9.9, "sens": "debit", "categorie": null, "id": "op_2026-05_005"}, {"date": "2026-05-04", "libelle": "ERIC KAYSER 31BLAGNAC", "detail": "010526 CB****2622-", "sousCategorie": "Livres, Magazines", "carte": "CB Cyrille", "montant": -8.2, "sens": "debit", "categorie": null, "id": "op_2026-05_006"}, {"date": "2026-05-04", "libelle": "RELAY", "detail": "010526 CB****2622-", "sousCategorie": "Livres, Magazines", "carte": "CB Cyrille", "montant": -7.4, "sens": "debit", "categorie": null, "id": "op_2026-05_007"}, {"date": "2026-05-04", "libelle": "PHARMACIE DE L'31BLAGNAC", "detail": "010526 CB****2622-", "sousCategorie": "Pharmacie", "carte": "CB Cyrille", "montant": -5.99, "sens": "debit", "categorie": null, "id": "op_2026-05_008"}, {"date": "2026-05-04", "libelle": "Carrefour Bauro31TOULOUSE", "detail": "010526 CB****2622-", "sousCategorie": "Hyper/supermarche", "carte": "CB Cyrille", "montant": -2.1, "sens": "debit", "categorie": null, "id": "op_2026-05_009"}, {"date": "2026-05-04", "libelle": "SPOTIFY", "detail": "010526 CB****2622-", "sousCategorie": "Video, Musique et jeux", "carte": "CB Cyrille", "montant": -17.2, "sens": "debit", "categorie": null, "id": "op_2026-05_010"}, {"date": "2026-05-04", "libelle": "HENNER GMC", "detail": "497331548/497331569 REMBOURSEMENT DES FRAIS MEDICAUX-D497331548", "sousCategorie": "Remboursements de soins", "carte": null, "montant": 120.0, "sens": "credit", "categorie": null, "id": "op_2026-05_011"}, {"date": "2026-05-05", "libelle": "CONCESSIONS AEROPORTS FRANCE TOULOUSE BLAGANC", "detail": "040526 CB****2622-", "sousCategorie": "Restaurant", "carte": "CB Cyrille", "montant": -4.6, "sens": "debit", "categorie": null, "id": "op_2026-05_012"}, {"date": "2026-05-05", "libelle": "MME CYRILLE PLANQUOIS", "detail": "Virement vers Compte De Depot Pa-", "sousCategorie": "Virement interne", "carte": null, "montant": 750.0, "sens": "credit", "categorie": null, "id": "op_2026-05_013"}, {"date": "2026-05-05", "libelle": "BPCE ASSURANCES", "detail": "BPCE Assurance Prelevement HABIT-HABITATION 014226338", "sousCategorie": "Banque et assurance - autre", "carte": null, "montant": -72.43, "sens": "debit", "categorie": null, "id": "op_2026-05_014"}, {"date": "2026-05-05", "libelle": "URSSAF RHONE ALPES", "detail": "PRELEVEMENT SALAIRE CESU + M. DU-042077CEW20230213A002861144", "sousCategorie": "Contributions sociales CSG, CRDS...", "carte": null, "montant": -120.0, "sens": "debit", "categorie": null, "id": "op_2026-05_015"}, {"date": "2026-05-05", "libelle": "ALPIQ RETAIL FRANCE", "detail": "ALP107-152-381-M-1", "sousCategorie": "Energie eau, gaz, electricite, fioul", "carte": null, "montant": -66.0, "sens": "debit", "categorie": null, "id": "op_2026-05_016"}, {"date": "2026-05-05", "libelle": "Jean-Marie Planquois", "detail": "Canal plus-Virement de Mme Ou M Planquois Cyri", "sousCategorie": "Virement emis - a categoriser", "carte": null, "montant": -15.0, "sens": "debit", "categorie": null, "id": "op_2026-05_017"}, {"date": "2026-05-05", "libelle": "M DUBARLE CELESTIN", "detail": "", "sousCategorie": "Virement emis - a categoriser", "carte": null, "montant": -10.0, "sens": "debit", "categorie": null, "id": "op_2026-05_018"}, {"date": "2026-05-05", "libelle": "M DUBARLE SOLAL", "detail": "", "sousCategorie": "Virement emis - a categoriser", "carte": null, "montant": -10.0, "sens": "debit", "categorie": null, "id": "op_2026-05_019"}, {"date": "2026-05-05", "libelle": "CAF DE HAUTE GARONNE", "detail": "1630072HPLANQUOIS 042026ME-50711206V16", "sousCategorie": "Aides et allocations", "carte": null, "montant": 76.13, "sens": "credit", "categorie": null, "id": "op_2026-05_020"}, {"date": "2026-05-06", "libelle": "VT PERISCOLAIRE31VILLENEUVE-TO", "detail": "050526 CB****4138-", "sousCategorie": "Juridique et administratif - autre", "carte": "CB Cedric", "montant": -252.35, "sens": "debit", "categorie": null, "id": "op_2026-05_021"}, {"date": "2026-05-06", "libelle": "MC DONALD'S", "detail": "050526 CB****4138-", "sousCategorie": "Restauration rapide", "carte": "CB Cedric", "montant": -30.84, "sens": "debit", "categorie": null, "id": "op_2026-05_022"}, {"date": "2026-05-06", "libelle": "AU PAIN PAR NATURE", "detail": "050526 CB****4138-", "sousCategorie": "Alimentation - autre", "carte": "CB Cedric", "montant": -13.25, "sens": "debit", "categorie": null, "id": "op_2026-05_023"}, {"date": "2026-05-06", "libelle": "TOTALENERGIES ELECTRICITE ET GAZ FRANCE", "detail": "Prelevement TotalEnergies Electr-DEMP012985231", "sousCategorie": "Energie eau, gaz, electricite, fioul", "carte": null, "montant": -162.0, "sens": "debit", "categorie": null, "id": "op_2026-05_024"}, {"date": "2026-05-07", "libelle": "LYDIA EP ACTIVITES ENFT", "detail": "Virement de Mme Ou M Planquois Cyrille-Virement de Mme Ou M Planquois Cyri", "sousCategorie": "Virement emis - a categoriser", "carte": null, "montant": -50.0, "sens": "debit", "categorie": null, "id": "op_2026-05_025"}, {"date": "2026-05-07", "libelle": "LYDIA EP ASSUR VOITURES", "detail": "Virement de Mme Ou M Planquois Cyrille-Virement de Mme Ou M Planquois Cyri", "sousCategorie": "Virement emis - a categoriser", "carte": null, "montant": -70.0, "sens": "debit", "categorie": null, "id": "op_2026-05_026"}, {"date": "2026-05-07", "libelle": "LYDIA EP VACANCES", "detail": "Virement de Mme Ou M Planquois Cyrille-Virement de Mme Ou M Planquois Cyri", "sousCategorie": "Virement emis - a categoriser", "carte": null, "montant": -355.0, "sens": "debit", "categorie": null, "id": "op_2026-05_027"}, {"date": "2026-05-07", "libelle": "DR PH. RAYNAL 31CUGNAUX", "detail": "050526 CB****4138-", "sousCategorie": "Consultation medicale", "carte": "CB Cedric", "montant": -30.0, "sens": "debit", "categorie": null, "id": "op_2026-05_028"}, {"date": "2026-05-07", "libelle": "INTERMARCHE 31CUGNAUX", "detail": "050526 CB****4138-", "sousCategorie": "Hyper/supermarche", "carte": "CB Cedric", "montant": -170.45, "sens": "debit", "categorie": null, "id": "op_2026-05_029"}, {"date": "2026-05-07", "libelle": "SFR", "detail": "SFR Prlvt SEPA 99-NXZL3T-01 0034-GP202408230260090025", "sousCategorie": "Internet et telephonie", "carte": null, "montant": -7.99, "sens": "debit", "categorie": null, "id": "op_2026-05_030"}, {"date": "2026-05-09", "libelle": "SumUp PsycholFR Toulouse", "detail": "070526 CB****4138-65,00EUR 1 EURO = 1,000000", "sousCategorie": "Consultation medicale", "carte": "CB Cedric", "montant": -65.0, "sens": "debit", "categorie": null, "id": "op_2026-05_031"}, {"date": "2026-05-09", "libelle": "INTERMARCHE", "detail": "060526 CB****4138-", "sousCategorie": "Carburant", "carte": "CB Cedric", "montant": -147.87, "sens": "debit", "categorie": null, "id": "op_2026-05_032"}, {"date": "2026-05-09", "libelle": "DR PH. RAYNAL 31CUGNAUX", "detail": "070526 CB****4138-", "sousCategorie": "Consultation medicale", "carte": "CB Cedric", "montant": -30.0, "sens": "debit", "categorie": null, "id": "op_2026-05_033"}, {"date": "2026-05-11", "libelle": "INTER SPORT", "detail": "090526 CB****2622-", "sousCategorie": "Vetements et chaussures", "carte": "CB Cyrille", "montant": -50.0, "sens": "debit", "categorie": null, "id": "op_2026-05_034"}, {"date": "2026-05-11", "libelle": "INTERMARCHE", "detail": "100526 CB****2622-", "sousCategorie": "Hyper/supermarche", "carte": "CB Cyrille", "montant": -31.29, "sens": "debit", "categorie": null, "id": "op_2026-05_035"}, {"date": "2026-05-11", "libelle": "CULTURA", "detail": "080526 CB****2622-", "sousCategorie": "Livres, Magazines", "carte": "CB Cyrille", "montant": -27.99, "sens": "debit", "categorie": null, "id": "op_2026-05_036"}, {"date": "2026-05-11", "libelle": "DR PELLAT 31TOULOUSE", "detail": "100526 CB****2622-", "sousCategorie": "Consultation medicale", "carte": "CB Cyrille", "montant": -18.45, "sens": "debit", "categorie": null, "id": "op_2026-05_037"}, {"date": "2026-05-11", "libelle": "MH CUGNAUX 31PORTET-SUR-GA", "detail": "080526 CB****2622-", "sousCategorie": "Alimentation - autre", "carte": "CB Cyrille", "montant": -4.2, "sens": "debit", "categorie": null, "id": "op_2026-05_038"}, {"date": "2026-05-11", "libelle": "INTERSPORT 31PORTET SUR GA", "detail": "080526 CB****4138-", "sousCategorie": "Travaux - Entretien", "carte": "CB Cedric", "montant": -48.98, "sens": "debit", "categorie": null, "id": "op_2026-05_039"}, {"date": "2026-05-11", "libelle": "MC DONALD'S", "detail": "090526 CB****4138-", "sousCategorie": "Restauration rapide", "carte": "CB Cedric", "montant": -26.84, "sens": "debit", "categorie": null, "id": "op_2026-05_040"}, {"date": "2026-05-11", "libelle": "HENNER GMC", "detail": "HEN001752619458 EN000080038401-H1156064212", "sousCategorie": "Juridique et administratif - autre", "carte": null, "montant": -105.33, "sens": "debit", "categorie": null, "id": "op_2026-05_041"}, {"date": "2026-05-11", "libelle": "C.P.A.M. TOULOUSE", "detail": "261270005333-261270005333", "sousCategorie": "Remboursements de soins", "carte": null, "montant": 9.0, "sens": "credit", "categorie": null, "id": "op_2026-05_042"}, {"date": "2026-05-12", "libelle": "INTERMARCHE", "detail": "110526 CB****2622-", "sousCategorie": "Hyper/supermarche", "carte": "CB Cyrille", "montant": -27.87, "sens": "debit", "categorie": null, "id": "op_2026-05_043"}, {"date": "2026-05-12", "libelle": "INTERMARCHE", "detail": "110526 CB****2622-", "sousCategorie": "Hyper/supermarche", "carte": "CB Cyrille", "montant": 23.9, "sens": "credit", "categorie": null, "id": "op_2026-05_044"}, {"date": "2026-05-12", "libelle": "HENNER GMC", "detail": "498227441 REMBOURSEMENT DES FRAIS MEDICAUX-D498227441", "sousCategorie": "Remboursements de soins", "carte": null, "montant": 9.0, "sens": "credit", "categorie": null, "id": "op_2026-05_045"}, {"date": "2026-05-13", "libelle": "MME CAROLINA LORENZO", "detail": "Virement de Mme Ou M Planquois Cyrille-Virement de Mme Ou M Planquois Cyri", "sousCategorie": "Virement emis - a categoriser", "carte": null, "montant": -17.0, "sens": "debit", "categorie": null, "id": "op_2026-05_046"}, {"date": "2026-05-13", "libelle": "EasyPark SARL FR easypark.fr", "detail": "120526 CB****2622-1,10EUR 1 EURO = 1,000000", "sousCategorie": "Peage et Stationnement", "carte": "CB Cyrille", "montant": -1.1, "sens": "debit", "categorie": null, "id": "op_2026-05_047"}, {"date": "2026-05-13", "libelle": "LEROY MERLIN", "detail": "120526 CB****4138-", "sousCategorie": "Travaux - Entretien", "carte": "CB Cedric", "montant": -36.79, "sens": "debit", "categorie": null, "id": "op_2026-05_048"}, {"date": "2026-05-13", "libelle": "PHARMACIE AGORA", "detail": "120526 CB****4138-", "sousCategorie": "Pharmacie", "carte": "CB Cedric", "montant": -14.23, "sens": "debit", "categorie": null, "id": "op_2026-05_049"}, {"date": "2026-05-13", "libelle": "AU PAIN PAR NATURE", "detail": "120526 CB****2622-", "sousCategorie": "Alimentation - autre", "carte": "CB Cyrille", "montant": -6.1, "sens": "debit", "categorie": null, "id": "op_2026-05_050"}, {"date": "2026-05-13", "libelle": "ENVOI WERO MARIE B", "detail": "Kdo anniv Carolina et Jerem-019e20ef1aed7db695be2889c2131987", "sousCategorie": "Virement emis - a categoriser", "carte": null, "montant": -40.0, "sens": "debit", "categorie": null, "id": "op_2026-05_051"}, {"date": "2026-05-14", "libelle": "HENNER GMC", "detail": "498442409 REMBOURSEMENT DES FRAIS MEDICAUX-D498442409", "sousCategorie": "Remboursements de soins", "carte": null, "montant": 9.0, "sens": "credit", "categorie": null, "id": "op_2026-05_052"}, {"date": "2026-05-15", "libelle": "1031", "detail": "140526 CB****2622-", "sousCategorie": "Restaurant", "carte": "CB Cyrille", "montant": -29.8, "sens": "debit", "categorie": null, "id": "op_2026-05_053"}, {"date": "2026-05-15", "libelle": "1031", "detail": "140526 CB****2622-", "sousCategorie": "Restaurant", "carte": "CB Cyrille", "montant": -13.75, "sens": "debit", "categorie": null, "id": "op_2026-05_054"}, {"date": "2026-05-15", "libelle": "AU PAIN PAR NATURE", "detail": "140526 CB****2622-", "sousCategorie": "Alimentation - autre", "carte": "CB Cyrille", "montant": -8.5, "sens": "debit", "categorie": null, "id": "op_2026-05_055"}, {"date": "2026-05-15", "libelle": "1031", "detail": "140526 CB****2622-", "sousCategorie": "Restaurant", "carte": "CB Cyrille", "montant": -7.8, "sens": "debit", "categorie": null, "id": "op_2026-05_056"}, {"date": "2026-05-15", "libelle": "HUIT A HUIT", "detail": "140526 CB****2622-", "sousCategorie": "Hyper/supermarche", "carte": "CB Cyrille", "montant": -4.6, "sens": "debit", "categorie": null, "id": "op_2026-05_057"}, {"date": "2026-05-15", "libelle": "INTERMARCHE", "detail": "130526 CB****4138-", "sousCategorie": "Hyper/supermarche", "carte": "CB Cedric", "montant": -61.33, "sens": "debit", "categorie": null, "id": "op_2026-05_058"}, {"date": "2026-05-15", "libelle": "DR LEMASSON 31TOULOUSE", "detail": "130526 CB****4138-", "sousCategorie": "Consultation medicale", "carte": "CB Cedric", "montant": -80.0, "sens": "debit", "categorie": null, "id": "op_2026-05_059"}, {"date": "2026-05-15", "libelle": "INTERMARCHE 31CUGNAUX", "detail": "130526 CB****4138-", "sousCategorie": "Hyper/supermarche", "carte": "CB Cedric", "montant": -67.81, "sens": "debit", "categorie": null, "id": "op_2026-05_060"}, {"date": "2026-05-15", "libelle": "C.P.A.M. TOULOUSE", "detail": "261330004839-261330004839", "sousCategorie": "Remboursements de soins", "carte": null, "montant": 21.0, "sens": "credit", "categorie": null, "id": "op_2026-05_061"}, {"date": "2026-05-18", "libelle": "KIABI FRANCE 59LEZENNES", "detail": "160526 CB****2622-", "sousCategorie": "Shopping et services - autre", "carte": "CB Cyrille", "montant": -76.5, "sens": "debit", "categorie": null, "id": "op_2026-05_062"}, {"date": "2026-05-18", "libelle": "ANIMA TOULOUSE 31VILLENEUVE TO", "detail": "170526 CB****2622-", "sousCategorie": "Shopping et services - autre", "carte": "CB Cyrille", "montant": -50.84, "sens": "debit", "categorie": null, "id": "op_2026-05_063"}, {"date": "2026-05-18", "libelle": "L'AUTRE RIVE 31TOULOUSE", "detail": "150526 CB****2622-", "sousCategorie": "Livres, Magazines", "carte": "CB Cyrille", "montant": -31.9, "sens": "debit", "categorie": null, "id": "op_2026-05_064"}, {"date": "2026-05-18", "libelle": "INTERMARCHE", "detail": "160526 CB****2622-", "sousCategorie": "Hyper/supermarche", "carte": "CB Cyrille", "montant": -14.2, "sens": "debit", "categorie": null, "id": "op_2026-05_065"}, {"date": "2026-05-18", "libelle": "MAITRE RAMEN 31TOULOUSE", "detail": "150526 CB****2622-", "sousCategorie": "Restauration rapide", "carte": "CB Cyrille", "montant": -13.5, "sens": "debit", "categorie": null, "id": "op_2026-05_066"}, {"date": "2026-05-18", "libelle": "INTERMARCHE", "detail": "160526 CB****2622-", "sousCategorie": "Hyper/supermarche", "carte": "CB Cyrille", "montant": -11.88, "sens": "debit", "categorie": null, "id": "op_2026-05_067"}, {"date": "2026-05-18", "libelle": "INTERMARCHE", "detail": "160526 CB****2622-", "sousCategorie": "Hyper/supermarche", "carte": "CB Cyrille", "montant": -9.77, "sens": "debit", "categorie": null, "id": "op_2026-05_068"}, {"date": "2026-05-18", "libelle": "TISSEO-REGIE AU31TOULOUSE", "detail": "150526 CB****2622-", "sousCategorie": "Transports en commun", "carte": "CB Cyrille", "montant": -3.2, "sens": "debit", "categorie": null, "id": "op_2026-05_069"}, {"date": "2026-05-18", "libelle": "BADIOU 31/TOULOUSE", "detail": "150526 CB****2622-", "sousCategorie": "Juridique et administratif - autre", "carte": "CB Cyrille", "montant": -1.5, "sens": "debit", "categorie": null, "id": "op_2026-05_070"}, {"date": "2026-05-18", "libelle": "INTERMARCHE", "detail": "160526 CB****4138-", "sousCategorie": "Hyper/supermarche", "carte": "CB Cedric", "montant": -6.99, "sens": "debit", "categorie": null, "id": "op_2026-05_071"}, {"date": "2026-05-18", "libelle": "AU PAIN PAR NATURE", "detail": "160526 CB****4138-", "sousCategorie": "Alimentation - autre", "carte": "CB Cedric", "montant": -6.0, "sens": "debit", "categorie": null, "id": "op_2026-05_072"}, {"date": "2026-05-18", "libelle": "HENNER GMC", "detail": "498955824 -0075949776-4K49--D498955824", "sousCategorie": "Remboursements de soins", "carte": null, "montant": 55.0, "sens": "credit", "categorie": null, "id": "op_2026-05_073"}, {"date": "2026-05-18", "libelle": "INTERMARCHE 31CUGNAUX", "detail": "160526 CB****4138-", "sousCategorie": "Hyper/supermarche", "carte": "CB Cedric", "montant": -47.27, "sens": "debit", "categorie": null, "id": "op_2026-05_074"}, {"date": "2026-05-18", "libelle": "INTERMARCHE", "detail": "150526 CB****2622-", "sousCategorie": "Carburant", "carte": "CB Cyrille", "montant": -76.81, "sens": "debit", "categorie": null, "id": "op_2026-05_075"}, {"date": "2026-05-18", "libelle": "DGFIP", "detail": "310291208129073389 222-24FR46ZZZ005002M331054478331", "sousCategorie": "Impots et taxes - autre", "carte": null, "montant": -293.0, "sens": "debit", "categorie": null, "id": "op_2026-05_076"}, {"date": "2026-05-19", "libelle": "MH CUGNAUX 31PORTET-SUR-GA", "detail": "180526 CB****2622-", "sousCategorie": "Alimentation - autre", "carte": "CB Cyrille", "montant": -9.1, "sens": "debit", "categorie": null, "id": "op_2026-05_077"}, {"date": "2026-05-19", "libelle": "PHARMACIE AGORA", "detail": "180526 CB****4138-", "sousCategorie": "Pharmacie", "carte": "CB Cedric", "montant": -12.9, "sens": "debit", "categorie": null, "id": "op_2026-05_078"}, {"date": "2026-05-19", "libelle": "HENNER GMC", "detail": "498995052/499083105 REMBOURSEMENT DES FRAIS MEDICAUX-D498995052", "sousCategorie": "Remboursements de soins", "carte": null, "montant": 27.45, "sens": "credit", "categorie": null, "id": "op_2026-05_079"}, {"date": "2026-05-19", "libelle": "INTERMARCHE", "detail": "180526 CB****4138-", "sousCategorie": "Carburant", "carte": "CB Cedric", "montant": -147.9, "sens": "debit", "categorie": null, "id": "op_2026-05_080"}, {"date": "2026-05-19", "libelle": "ULYS MOBILITE SERVICES", "detail": "MD000538670560152130 042026-250560152130159336", "sousCategorie": "Banque et assurance - autre", "carte": null, "montant": -91.4, "sens": "debit", "categorie": null, "id": "op_2026-05_081"}, {"date": "2026-05-20", "libelle": "DR PH. RAYNAL 31CUGNAUX", "detail": "180526 CB****4138-", "sousCategorie": "Consultation medicale", "carte": "CB Cedric", "montant": -30.0, "sens": "debit", "categorie": null, "id": "op_2026-05_082"}, {"date": "2026-05-20", "libelle": "AU PAIN PAR NATURE", "detail": "190526 CB****2622-", "sousCategorie": "Alimentation - autre", "carte": "CB Cyrille", "montant": -2.8, "sens": "debit", "categorie": null, "id": "op_2026-05_083"}, {"date": "2026-05-21", "libelle": "Disney Plus NL Hoofddorp", "detail": "200526 CB****2622-6,99EUR 1 EURO = 1,000000", "sousCategorie": "Internet et telephonie", "carte": "CB Cyrille", "montant": -6.99, "sens": "debit", "categorie": null, "id": "op_2026-05_084"}, {"date": "2026-05-21", "libelle": "INTERMARCHE SA 75PARIS", "detail": "190526 CB****2622-", "sousCategorie": "Hyper/supermarche", "carte": "CB Cyrille", "montant": -80.72, "sens": "debit", "categorie": null, "id": "op_2026-05_085"}, {"date": "2026-05-21", "libelle": "PICARD", "detail": "200526 CB****2622-", "sousCategorie": "Hyper/supermarche", "carte": "CB Cyrille", "montant": -5.5, "sens": "debit", "categorie": null, "id": "op_2026-05_086"}, {"date": "2026-05-21", "libelle": "M CEDRIC DUBARLE", "detail": "Virement vers Compte De Depot Pa-", "sousCategorie": "Virement interne", "carte": null, "montant": 350.0, "sens": "credit", "categorie": null, "id": "op_2026-05_087"}, {"date": "2026-05-21", "libelle": "C.P.A.M. TOULOUSE", "detail": "261400004633-261400004633", "sousCategorie": "Remboursements de soins", "carte": null, "montant": 19.0, "sens": "credit", "categorie": null, "id": "op_2026-05_088"}, {"date": "2026-05-22", "libelle": "CAFES MERLING-CAFES ERREL-CAFES SOUBIRA", "detail": "210526 CB****2622-", "sousCategorie": "Shopping et services - autre", "carte": "CB Cyrille", "montant": -2.4, "sens": "debit", "categorie": null, "id": "op_2026-05_089"}, {"date": "2026-05-22", "libelle": "C.P.A.M. TOULOUSE", "detail": "261410005241-261410005241", "sousCategorie": "Remboursements de soins", "carte": null, "montant": 42.0, "sens": "credit", "categorie": null, "id": "op_2026-05_090"}, {"date": "2026-05-22", "libelle": "COTISATIONS BANCAIRES", "detail": "XCCNV066 2026052100021401000001-CONTRAT CNV0007798038", "sousCategorie": "Frais bancaires", "carte": null, "montant": -22.41, "sens": "debit", "categorie": null, "id": "op_2026-05_091"}, {"date": "2026-05-23", "libelle": "INTERMARCHE 31CUGNAUX", "detail": "210526 CB****4138-", "sousCategorie": "Hyper/supermarche", "carte": "CB Cedric", "montant": -17.24, "sens": "debit", "categorie": null, "id": "op_2026-05_092"}, {"date": "2026-05-26", "libelle": "PHARMACIE AGORA", "detail": "220526 CB****4138-", "sousCategorie": "Pharmacie", "carte": "CB Cedric", "montant": -26.14, "sens": "debit", "categorie": null, "id": "op_2026-05_093"}, {"date": "2026-05-26", "libelle": "MC DONALD'S", "detail": "240526 CB****4138-", "sousCategorie": "Restauration rapide", "carte": "CB Cedric", "montant": -22.84, "sens": "debit", "categorie": null, "id": "op_2026-05_094"}, {"date": "2026-05-26", "libelle": "INTERMARCHE", "detail": "220526 CB****4138-", "sousCategorie": "Hyper/supermarche", "carte": "CB Cedric", "montant": -7.99, "sens": "debit", "categorie": null, "id": "op_2026-05_095"}, {"date": "2026-05-26", "libelle": "KIABI", "detail": "220526 CB****4138-", "sousCategorie": "Vetements et chaussures", "carte": "CB Cedric", "montant": -7.5, "sens": "debit", "categorie": null, "id": "op_2026-05_096"}, {"date": "2026-05-26", "libelle": "PRODUCTEURS CAN81RABASTENS", "detail": "220526 CB****4138-", "sousCategorie": "Hyper/supermarche", "carte": "CB Cedric", "montant": -6.0, "sens": "debit", "categorie": null, "id": "op_2026-05_097"}, {"date": "2026-05-26", "libelle": "KIABI FRANCE 59LEZENNES", "detail": "250526 CB****2622-", "sousCategorie": "Shopping et services - autre", "carte": "CB Cyrille", "montant": -43.0, "sens": "debit", "categorie": null, "id": "op_2026-05_098"}, {"date": "2026-05-26", "libelle": "PICARD", "detail": "220526 CB****2622-", "sousCategorie": "Hyper/supermarche", "carte": "CB Cyrille", "montant": -33.49, "sens": "debit", "categorie": null, "id": "op_2026-05_099"}, {"date": "2026-05-26", "libelle": "AU PAIN PAR NATURE", "detail": "220526 CB****2622-", "sousCategorie": "Alimentation - autre", "carte": "CB Cyrille", "montant": -9.75, "sens": "debit", "categorie": null, "id": "op_2026-05_100"}, {"date": "2026-05-26", "libelle": "HENNER GMC", "detail": "499920134 REMBOURSEMENT DES FRAIS MEDICAUX-D499920134", "sousCategorie": "Remboursements de soins", "carte": null, "montant": 9.0, "sens": "credit", "categorie": null, "id": "op_2026-05_101"}, {"date": "2026-05-27", "libelle": "Phcie Capitouls31VILLENEUVE-TO", "detail": "260526 CB****2622-", "sousCategorie": "Pharmacie", "carte": "CB Cyrille", "montant": -20.8, "sens": "debit", "categorie": null, "id": "op_2026-05_102"}, {"date": "2026-05-27", "libelle": "HENNER GMC", "detail": "500096689 REMBOURSEMENT DES FRAIS MEDICAUX-D500096689", "sousCategorie": "Remboursements de soins", "carte": null, "montant": 38.0, "sens": "credit", "categorie": null, "id": "op_2026-05_103"}, {"date": "2026-05-28", "libelle": "INTERMARCHE SA 75PARIS", "detail": "270526 CB****2622-", "sousCategorie": "Hyper/supermarche", "carte": "CB Cyrille", "montant": -52.51, "sens": "debit", "categorie": null, "id": "op_2026-05_104"}, {"date": "2026-05-28", "libelle": "DR FRECHOU SAND31CUGNAUX", "detail": "270526 CB****2622-", "sousCategorie": "Consultation medicale", "carte": "CB Cyrille", "montant": -30.0, "sens": "debit", "categorie": null, "id": "op_2026-05_105"}, {"date": "2026-05-28", "libelle": "AU PAIN PAR NATURE", "detail": "270526 CB****2622-", "sousCategorie": "Alimentation - autre", "carte": "CB Cyrille", "montant": -5.94, "sens": "debit", "categorie": null, "id": "op_2026-05_106"}, {"date": "2026-05-28", "libelle": "SFR", "detail": "SFR Prlvt SEPA 1-1I5WP4ISH 00327-GP202408230260090025", "sousCategorie": "Internet et telephonie", "carte": null, "montant": -22.46, "sens": "debit", "categorie": null, "id": "op_2026-05_107"}, {"date": "2026-05-29", "libelle": "MC DONALD'S", "detail": "280526 CB****2622-", "sousCategorie": "Restauration rapide", "carte": "CB Cyrille", "montant": -20.1, "sens": "debit", "categorie": null, "id": "op_2026-05_108"}, {"date": "2026-05-29", "libelle": "CENTRAKOR", "detail": "280526 CB****2622-", "sousCategorie": "Ameublement et appareil", "carte": "CB Cyrille", "montant": -19.97, "sens": "debit", "categorie": null, "id": "op_2026-05_109"}, {"date": "2026-05-29", "libelle": "selas pharmacie31cugnaux", "detail": "270526 CB****2622-", "sousCategorie": "Pharmacie", "carte": "CB Cyrille", "montant": -8.49, "sens": "debit", "categorie": null, "id": "op_2026-05_110"}, {"date": "2026-05-29", "libelle": "selas pharmacie31cugnaux", "detail": "270526 CB****2622-", "sousCategorie": "Pharmacie", "carte": "CB Cyrille", "montant": -7.99, "sens": "debit", "categorie": null, "id": "op_2026-05_111"}, {"date": "2026-05-29", "libelle": "URSSAF RHONE ALPES", "detail": "PRELEVEMENT CNCESU M. DUBARLE CE-042077CEW20230213A002861144", "sousCategorie": "Contributions sociales CSG, CRDS...", "carte": null, "montant": -90.38, "sens": "debit", "categorie": null, "id": "op_2026-05_112"}];
+
+// ===== state.js =====
+// =========================================================
+// STATE MANAGEMENT
+// =========================================================
+
+const STORAGE_KEY = "budget_famille_v1";
+
+function defaultPrevisionnel(){
+  const prev = {};
+  for(const key in CATEGORIES){
+    CATEGORIES[key].items.forEach(cat => { prev[cat] = 0; });
+  }
+  return prev;
+}
+
+function defaultState(){
+  const moisKey = "2026-05";
+  return {
+    moisActif: moisKey,
+    moisListe: [moisKey],
+    operations: {
+      [moisKey]: OPERATIONS_MAI_2026.map(o => ({...o}))
+    },
+    previsionnel: {
+      [moisKey]: defaultPrevisionnel()
+    },
+    soldeCompte: {
+      [moisKey]: { debut: null }
+    },
+    regles: {}
+  };
+}
+
+let STATE = null;
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      STATE = JSON.parse(raw);
+      return;
+    }
+  }catch(e){
+    console.warn("Impossible de lire le stockage local, démarrage avec des données par défaut.", e);
+  }
+  STATE = defaultState();
+  saveState();
+}
+
+function saveState(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(STATE));
+    // Déclenche un push vers Google Sheets (debouncé, 1.5s d'inactivité)
+    if(typeof schedulePush === "function") schedulePush();
+  }catch(e){
+    console.error("Erreur de sauvegarde locale", e);
+    showToast("Erreur lors de la sauvegarde locale. Exportez vos données pour ne rien perdre.");
+  }
+}
+
+function currentOps(){
+  return STATE.operations[STATE.moisActif] || [];
+}
+
+function currentPrevisionnel(){
+  return STATE.previsionnel[STATE.moisActif] || defaultPrevisionnel();
+}
+
+function realParCategorie(moisKey){
+  const ops = STATE.operations[moisKey] || [];
+  const totals = {};
+  for(const key in CATEGORIES){
+    CATEGORIES[key].items.forEach(cat => { totals[cat] = 0; });
+  }
+  ops.forEach(op => {
+    if(op.categorie && totals.hasOwnProperty(op.categorie)){
+      totals[op.categorie] += Math.abs(op.montant);
+    }
+  });
+  return totals;
+}
+
+function totalSection(moisKey, sectionKey){
+  const reals = realParCategorie(moisKey);
+  return CATEGORIES[sectionKey].items.reduce((sum, cat) => sum + (reals[cat] || 0), 0);
+}
+
+function totalSectionPrevisionnel(moisKey, sectionKey){
+  const prev = STATE.previsionnel[moisKey] || defaultPrevisionnel();
+  return CATEGORIES[sectionKey].items.reduce((sum, cat) => sum + (Number(prev[cat]) || 0), 0);
+}
+
+function soldeDuMois(moisKey){
+  const revenus = totalSection(moisKey, "revenus");
+  const fixes = totalSection(moisKey, "fixes");
+  const variables = totalSection(moisKey, "variables");
+  const epargne = totalSection(moisKey, "epargne");
+  return revenus - fixes - variables - epargne;
+}
+
+function soldeDuMoisPrevisionnel(moisKey){
+  const revenus = totalSectionPrevisionnel(moisKey, "revenus");
+  const fixes = totalSectionPrevisionnel(moisKey, "fixes");
+  const variables = totalSectionPrevisionnel(moisKey, "variables");
+  const epargne = totalSectionPrevisionnel(moisKey, "epargne");
+  return revenus - fixes - variables - epargne;
+}
+
+function nbOperationsClassees(moisKey){
+  const ops = STATE.operations[moisKey] || [];
+  return ops.filter(o => o.categorie).length;
+}
+
+// ---------- Solde de compte (début / fin de mois) ----------
+function getSoldeDebut(moisKey){
+  const entry = STATE.soldeCompte && STATE.soldeCompte[moisKey];
+  if(entry && entry.debut !== null && entry.debut !== undefined){
+    return entry.debut;
+  }
+  // Reprend automatiquement le solde en cours du mois précédent UNIQUEMENT si ce mois est entièrement classé
+  const moisAnterieurs = STATE.moisListe.filter(m => m < moisKey).sort();
+  if(moisAnterieurs.length){
+    const moisRef = moisAnterieurs[moisAnterieurs.length-1];
+    const opsRef = STATE.operations[moisRef] || [];
+    const toutesClassees = opsRef.length > 0 && opsRef.every(o => !!o.categorie);
+    if(toutesClassees){
+      return getSoldeEnCours(moisRef);
+    }
+  }
+  return 0;
+}
+
+function getSoldeEnCours(moisKey){
+  // Toujours calculé : solde début + flux des opérations classées
+  return getSoldeDebut(moisKey) + soldeDuMois(moisKey);
+}
+
+function setSoldeDebut(moisKey, valeur){
+  if(!STATE.soldeCompte) STATE.soldeCompte = {};
+  if(!STATE.soldeCompte[moisKey]) STATE.soldeCompte[moisKey] = { debut: null };
+  STATE.soldeCompte[moisKey].debut = valeur;
+  saveState();
+}
+
+function resetSoldeDebutManuel(moisKey){
+  if(STATE.soldeCompte && STATE.soldeCompte[moisKey]){
+    STATE.soldeCompte[moisKey].debut = null;
+  }
+  saveState();
+}
+
+function creerNouveauMois(moisKey){
+  if(STATE.moisListe.includes(moisKey)) return false;
+  STATE.moisListe.push(moisKey);
+  STATE.moisListe.sort();
+  STATE.operations[moisKey] = [];
+  // Reconduction du prévisionnel du mois précédent (le plus récent avant ce mois)
+  const moisAnterieurs = STATE.moisListe.filter(m => m < moisKey);
+  const moisRef = moisAnterieurs.length ? moisAnterieurs[moisAnterieurs.length-1] : null;
+  STATE.previsionnel[moisKey] = moisRef ? {...STATE.previsionnel[moisRef]} : defaultPrevisionnel();
+  STATE.soldeCompte[moisKey] = { debut: null };
+  saveState();
+  return true;
+}
+
+function importerOperations(moisKey, nouvellesOps){
+  if(!STATE.operations[moisKey]) STATE.operations[moisKey] = [];
+  const existantes = STATE.operations[moisKey];
+  const dejaPresentes = new Set(existantes.map(o => o.date+"|"+o.libelle+"|"+o.montant));
+  let compteur = existantes.length;
+  let ajoutees = 0;
+  nouvellesOps.forEach(op => {
+    const sig = op.date+"|"+op.libelle+"|"+op.montant;
+    if(dejaPresentes.has(sig)) return; // évite les doublons d'import
+    compteur++;
+    existantes.push({
+      id: "op_"+moisKey+"_"+String(compteur).padStart(3,"0"),
+      date: op.date,
+      libelle: op.libelle,
+      detail: op.detail || "",
+      sousCategorie: op.sousCategorie || "",
+      carte: op.carte || null,
+      montant: op.montant,
+      sens: op.montant >= 0 ? "credit" : "debit",
+      categorie: null
+    });
+    ajoutees++;
+  });
+  existantes.sort((a,b) => a.date.localeCompare(b.date));
+  saveState();
+  return ajoutees;
+}
+
+// Importe un lot d'opérations potentiellement à cheval sur plusieurs mois.
+// Regroupe automatiquement par mois (AAAA-MM extrait de op.date), crée les
+// onglets mensuels manquants, et répartit chaque opération dans le bon mois.
+// Retourne un résumé : { parMois: { "2026-01": ajoutees, ... }, moisCrees: [...], totalAjoutees }
+function importerOperationsMultiMois(nouvellesOps){
+  const groupes = {};
+  nouvellesOps.forEach(op => {
+    const moisKey = (op.date || "").slice(0, 7); // "AAAA-MM"
+    if(!moisKey || moisKey.length !== 7) return;
+    if(!groupes[moisKey]) groupes[moisKey] = [];
+    groupes[moisKey].push(op);
+  });
+
+  const moisConcernes = Object.keys(groupes).sort();
+  const moisCrees = [];
+  const parMois = {};
+
+  moisConcernes.forEach(moisKey => {
+    if(!STATE.moisListe.includes(moisKey)){
+      creerNouveauMois(moisKey);
+      moisCrees.push(moisKey);
+    }
+    const ajoutees = importerOperations(moisKey, groupes[moisKey]);
+    parMois[moisKey] = ajoutees;
+  });
+
+  const totalAjoutees = Object.values(parMois).reduce((s,n) => s+n, 0);
+  saveState();
+  return { parMois, moisCrees, moisConcernes, totalAjoutees };
+}
+
+function classerOperation(moisKey, opId, categorie){
+  const ops = STATE.operations[moisKey] || [];
+  const op = ops.find(o => o.id === opId);
+  if(op){
+    op.categorie = categorie;
+    saveState();
+  }
+}
+
+function declasserOperation(moisKey, opId){
+  const ops = STATE.operations[moisKey] || [];
+  const op = ops.find(o => o.id === opId);
+  if(op){
+    op.categorie = null;
+    saveState();
+  }
+}
+
+function resetClassementMois(moisKey){
+  const ops = STATE.operations[moisKey] || [];
+  ops.forEach(op => { op.categorie = null; });
+  saveState();
+}
+
+function reinitialiserMoisComplet(moisKey){
+  // Supprime toutes les opérations du mois (à réimporter via CSV)
+  STATE.operations[moisKey] = [];
+  saveState();
+}
+
+// Supprime complètement un mois : opérations, prévisionnel, solde, et retire
+// l'onglet de la liste. Si le mois supprimé était actif, bascule sur un autre.
+function supprimerMoisCompletement(moisKey){
+  if(!STATE.moisListe.includes(moisKey)) return false;
+
+  delete STATE.operations[moisKey];
+  delete STATE.previsionnel[moisKey];
+  if(STATE.soldeCompte) delete STATE.soldeCompte[moisKey];
+  STATE.moisListe = STATE.moisListe.filter(m => m !== moisKey);
+
+  if(STATE.moisActif === moisKey){
+    if(STATE.moisListe.length > 0){
+      // Bascule sur le mois le plus proche chronologiquement (le précédent si possible)
+      const anterieurs = STATE.moisListe.filter(m => m < moisKey);
+      STATE.moisActif = anterieurs.length
+        ? anterieurs[anterieurs.length - 1]
+        : STATE.moisListe[0];
+    } else {
+      // Plus aucun mois : on en recrée un vide pour le mois en cours
+      const nouveauKey = moisKey;
+      STATE.moisListe = [nouveauKey];
+      STATE.operations[nouveauKey] = [];
+      STATE.previsionnel[nouveauKey] = defaultPrevisionnel();
+      STATE.soldeCompte[nouveauKey] = { debut: null };
+      STATE.moisActif = nouveauKey;
+    }
+  }
+
+  saveState();
+  return true;
+}
+
+// Un mois est "révolu et complet" si : ce n'est pas le mois en cours (le plus récent actif)
+// ET toutes ses opérations ont une catégorie ET il contient au moins une opération.
+function moisEstRevoluEtComplet(moisKey){
+  const ops = STATE.operations[moisKey] || [];
+  if(ops.length === 0) return false;
+  const toutesClassees = ops.every(o => !!o.categorie);
+  if(!toutesClassees) return false;
+  // "Révolu" = il existe un mois strictement postérieur dans la liste (on a avancé depuis)
+  const aUnMoisSuivant = STATE.moisListe.some(m => m > moisKey);
+  return aUnMoisSuivant;
+}
+
+function moisRevolusComplets(){
+  return STATE.moisListe.filter(moisEstRevoluEtComplet).sort();
+}
+
+// =========================================================
+// MÉMOIRE DES RÈGLES (apprentissage)
+// =========================================================
+// Structure : STATE.regles = { "LIBELLE_NORMALISE": { categorie, score, derniereVue } }
+
+function normaliserLibelle(libelle){
+  return (libelle || "")
+    .toUpperCase()
+    .replace(/\d{6,}/g, "")      // retire les longues séquences numériques (refs bancaires)
+    .replace(/[^A-Z\s]/g, " ")   // garde seulement lettres et espaces
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 40);               // limite à 40 chars pour la clé
+}
+
+function apprentissage(libelle, categorie){
+  if(!STATE.regles) STATE.regles = {};
+  const cle = normaliserLibelle(libelle);
+  if(!cle) return;
+  const existant = STATE.regles[cle];
+  if(existant && existant.categorie === categorie){
+    existant.score = Math.min((existant.score || 1) + 1, 20);
+    existant.derniereVue = Date.now();
+  } else {
+    STATE.regles[cle] = { categorie, score: 1, derniereVue: Date.now() };
+  }
+  saveState();
+}
+
+function supprimerRegle(libelle){
+  if(!STATE.regles) return;
+  const cle = normaliserLibelle(libelle);
+  delete STATE.regles[cle];
+  saveState();
+}
+
+function chercherRegle(libelle){
+  if(!STATE.regles) return null;
+  const cle = normaliserLibelle(libelle);
+  if(!cle) return null;
+  // Correspondance exacte
+  if(STATE.regles[cle]) return STATE.regles[cle];
+  // Correspondance approximative : on cherche une clé dont les 10 premiers chars matchent
+  const debut = cle.slice(0, 10);
+  if(debut.length < 4) return null;
+  let meilleur = null;
+  let meilleurScore = 0;
+  for(const k in STATE.regles){
+    if(k.startsWith(debut)){
+      const r = STATE.regles[k];
+      if(r.score > meilleurScore){
+        meilleurScore = r.score;
+        meilleur = r;
+      }
+    }
+  }
+  return meilleur;
+}
+
+// Applique les règles mémorisées à une liste d'opérations.
+// Retourne { preClassees: [{op, categorie, regle}], aClasser: [op] }
+function preClasserOperations(ops){
+  const preClassees = [];
+  const aClasser = [];
+  ops.forEach(op => {
+    if(op.categorie){
+      // déjà classée, on skip
+      return;
+    }
+    const regle = chercherRegle(op.libelle);
+    if(regle){
+      preClassees.push({ op, categorie: regle.categorie, score: regle.score });
+    } else {
+      aClasser.push(op);
+    }
+  });
+  return { preClassees, aClasser };
+}
+
+// ===== render.js =====
+// =========================================================
+// RENDU - DASHBOARD PRINCIPAL
+// =========================================================
+
+const EUR = new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+const EUR_DEC = new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+function fmtEUR(n, decimals){
+  const v = decimals ? EUR_DEC.format(n) : EUR.format(Math.round(n));
+  return v + " €";
+}
+
+function fmtDateFr(isoDate){
+  const [y,m,d] = isoDate.split("-");
+  return `${d}/${m}/${y}`;
+}
+
+// État du tableau d'opérations : tri et filtres par colonne
+let opsQuickFilter = "toutes"; // toutes | aClasser | classees
+let opsSortColumn = "date";    // date | libelle | montant | sousCategorie | carte | categorie
+let opsSortDir = "desc";       // asc | desc
+let opsColumnFilters = {};     // { colonne: valeur }
+let openFilterMenu = null;     // colonne dont le menu de filtre est ouvert
+let selectedOpIds = new Set(); // ids des opérations sélectionnées
+let moisOptionsOpen = false;   // affichage du menu "Options du mois"
+
+let currentView = "dashboard"; // dashboard | synthese
+
+function render(){
+  const app = document.getElementById("app");
+  if(currentView === "synthese"){
+    app.innerHTML = `
+      ${renderTopbar()}
+      <div class="shell">
+        ${renderSynthese()}
+        <footer class="app-footer">Budget Famille — vos données restent sur cet ordinateur, dans ce navigateur.</footer>
+      </div>
+    `;
+    attachTopbarEvents();
+    attachSyntheseEvents();
+    drawSyntheseChart();
+    return;
+  }
+  app.innerHTML = `
+    ${renderTopbar()}
+    <div class="shell">
+      ${renderHero()}
+      ${renderSectionsGrid()}
+      ${renderCharts()}
+      ${renderOpsTable()}
+      <footer class="app-footer">Budget Famille — vos données restent sur cet ordinateur, dans ce navigateur.</footer>
+    </div>
+  `;
+  attachDashboardEvents();
+  renderCharts_draw();
+}
+
+function renderTopbar(){
+  const options = STATE.moisListe.map(m =>
+    `<option value="${m}" ${m===STATE.moisActif?"selected":""}>${moisLabel(m)}</option>`
+  ).join("");
+  return `
+  <div class="topbar">
+    <div class="brand">
+      <span class="brand-mark">Budget<span>.</span>Famille</span>
+    </div>
+    <div class="month-switcher">
+      ${currentView === "dashboard" ? `
+        <select id="moisSelect">${options}</select>
+        <button class="btn btn-ghost btn-sm" id="btnNouveauMois">+ Nouveau mois</button>
+      ` : `<span class="status-title display" style="font-size:18px;">Synthèse annuelle</span>`}
+    </div>
+    <div class="topbar-actions">
+      <button class="btn ${currentView==='synthese'?'btn-primary':'btn-secondary'} btn-sm" id="btnToggleSynthese">${currentView==='synthese' ? '← Retour au mois' : 'Synthèse annuelle'}</button>
+      ${currentView === "dashboard" ? `
+        <button class="btn btn-secondary btn-sm" id="btnImportCSV">Importer un relevé CSV</button>
+        <button class="btn btn-primary btn-sm" id="btnClasser">Classer les opérations</button>
+        <div class="dropdown-wrap" id="moisOptionsWrap">
+          <button class="btn btn-ghost btn-sm" id="btnMoisOptions" style="color:var(--rouge);">🗑 Options du mois ▾</button>
+          ${moisOptionsOpen ? `
+          <div class="dropdown-menu">
+            <button class="dropdown-item" id="btnReinitMoisComplet">
+              <span class="dropdown-item-title">Réinitialiser les opérations</span>
+              <span class="dropdown-item-sub">Vide les opérations classées, garde l'onglet (à réimporter via CSV)</span>
+            </button>
+            <button class="dropdown-item" id="btnSupprimerMoisOnglet">
+              <span class="dropdown-item-title" style="color:var(--rouge);">Supprimer ce mois entièrement</span>
+              <span class="dropdown-item-sub">Retire l'onglet, ses opérations, son prévisionnel et son solde</span>
+            </button>
+          </div>` : ``}
+        </div>
+      ` : ``}
+      <button class="btn btn-ghost btn-sm" id="btnExport" title="Sauvegarder vos données dans un fichier">Exporter</button>
+      <button class="btn btn-ghost btn-sm" id="btnImportJSON" title="Restaurer une sauvegarde .json">Importer une sauvegarde</button>
+      <button class="btn btn-ghost btn-sm" id="btnGererApprentissages" title="Voir et gérer les règles mémorisées">⚙ Apprentissages</button>
+      <span id="syncIndicator" class="sync-indicator" title="Cliquer pour configurer ou forcer une synchronisation" id="syncIndicatorBtn" style="cursor:pointer;">— <span style="font-size:11px; color:var(--ink-soft);">Sync désactivée</span></span>
+    </div>
+  </div>
+  <input type="file" id="csvFileInput" accept=".csv" style="display:none">
+  <input type="file" id="jsonFileInput" accept=".json" style="display:none">
+  `;
+}
+
+function renderHero(){
+  const moisKey = STATE.moisActif;
+  const solde = soldeDuMois(moisKey);
+  const soldePrev = soldeDuMoisPrevisionnel(moisKey);
+  const total = (STATE.operations[moisKey]||[]).length;
+  const classees = nbOperationsClassees(moisKey);
+  const pct = total ? Math.round((classees/total)*100) : (total===0 ? 0 : 100);
+
+  const revenusReal = totalSection(moisKey,"revenus");
+  const depensesReal = totalSection(moisKey,"fixes") + totalSection(moisKey,"variables");
+  const epargneReal = totalSection(moisKey,"epargne");
+
+  const soldeDebut = getSoldeDebut(moisKey);
+  const soldeEnCours = getSoldeEnCours(moisKey);
+  const debutEstManuel = STATE.soldeCompte && STATE.soldeCompte[moisKey] && STATE.soldeCompte[moisKey].debut !== null;
+
+  return `
+  <div class="hero">
+    <div class="solde-card">
+      <div>
+        <div class="solde-label">Solde du mois — ${moisLabel(moisKey)}</div>
+        <div class="solde-value ${solde<0?'negative':''} display">${solde<0?'−':''}${fmtEUR(Math.abs(solde))}</div>
+        <div class="solde-sub">Prévisionnel : ${fmtEUR(soldePrev)}</div>
+      </div>
+      <div class="solde-progress-row">
+        <div class="mini-stat">
+          <div class="mini-stat-label">Revenus</div>
+          <div class="mini-stat-value display">${fmtEUR(revenusReal)}</div>
+        </div>
+        <div class="mini-stat">
+          <div class="mini-stat-label">Dépenses</div>
+          <div class="mini-stat-value display">${fmtEUR(depensesReal)}</div>
+        </div>
+        <div class="mini-stat">
+          <div class="mini-stat-label">Épargné</div>
+          <div class="mini-stat-value display">${fmtEUR(epargneReal)}</div>
+        </div>
+      </div>
+    </div>
+    <div class="status-card">
+      <div>
+        <h3 class="status-title display">Avancement du classement</h3>
+        <div class="status-sub">${classees} opération${classees>1?'s':''} classée${classees>1?'s':''} sur ${total}</div>
+        <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+        <div class="progress-caption">${pct}% des opérations de ${moisLabel(moisKey)} sont affectées à une catégorie.</div>
+      </div>
+      <div class="solde-compte-row">
+        <div class="solde-compte-field">
+          <label>Solde début de mois ${debutEstManuel ? '<span class="manual-tag">modifié</span>' : ''}</label>
+          <input type="number" step="0.01" id="soldeDebutInput" value="${soldeDebut.toFixed(2)}" title="Cliquez pour modifier manuellement">
+        </div>
+        <div class="solde-compte-field">
+          <label>Solde en cours <span class="manual-tag" style="background:var(--sapin-soft);color:var(--sapin);">calculé</span></label>
+          <div class="solde-encours-display display ${soldeEnCours<0?'debit':'credit'}">${soldeEnCours<0?'−':''}${fmtEUR(Math.abs(soldeEnCours),true)}</div>
+        </div>
+      </div>
+      <div class="status-cta">
+        <button class="btn btn-primary" id="btnClasserHero" style="width:100%; justify-content:center;">
+          ${pct===100 ? "Revoir le classement" : "Reprendre le classement →"}
+        </button>
+      </div>
+    </div>
+  </div>
+  `;
+}
+
+function renderSectionCard(sectionKey){
+  const section = CATEGORIES[sectionKey];
+  const moisKey = STATE.moisActif;
+  const reals = realParCategorie(moisKey);
+  const prev = STATE.previsionnel[moisKey] || defaultPrevisionnel();
+  const totalReal = totalSection(moisKey, sectionKey);
+  const totalPrev = totalSectionPrevisionnel(moisKey, sectionKey);
+
+  const rows = section.items.map(cat => {
+    const r = reals[cat] || 0;
+    const p = prev[cat] !== undefined ? prev[cat] : 0;
+    return `
+    <div class="cat-row">
+      <span class="cat-name">${cat}</span>
+      <input type="number" class="cat-prev-input" data-cat="${escapeAttr(cat)}" data-section="${sectionKey}" value="${p}" step="10" placeholder="0">
+      <span class="cat-real ${r===0?'zero':''}">${fmtEUR(r)}</span>
+    </div>`;
+  }).join("");
+
+  return `
+  <div class="section-card section-${sectionKey}">
+    <div class="section-head">
+      <span class="tag">${section.label}</span>
+      <div class="section-totals">
+        <span class="section-total-prev">Prévu ${fmtEUR(totalPrev)}</span>
+        <span class="section-total-real display">${fmtEUR(totalReal)}</span>
+      </div>
+    </div>
+    <div class="cat-list">${rows}</div>
+  </div>
+  `;
+}
+
+function renderSectionsGrid(){
+  return `
+  <div class="sections-grid">
+    ${renderSectionCard("revenus")}
+    ${renderSectionCard("fixes")}
+    ${renderSectionCard("variables")}
+    ${renderSectionCard("epargne")}
+  </div>`;
+}
+
+function renderCharts(){
+  return `
+  <div class="charts-grid">
+    <div class="chart-card">
+      <h3 class="chart-title display">Répartition des dépenses (réel)</h3>
+      <canvas id="chartRepartition" height="220"></canvas>
+    </div>
+    <div class="chart-card">
+      <h3 class="chart-title display">Prévisionnel vs réel</h3>
+      <canvas id="chartPrevReel" height="220"></canvas>
+    </div>
+  </div>`;
+}
+
+const OPS_COLUMNS = [
+  { key: "date", label: "Date", sortable: true, filterable: false },
+  { key: "libelle", label: "Libellé", sortable: true, filterable: true },
+  { key: "carte", label: "Carte", sortable: true, filterable: true },
+  { key: "sousCategorie", label: "Sous-catégorie", sortable: true, filterable: true },
+  { key: "montant", label: "Montant", sortable: true, filterable: false, align: "right" },
+  { key: "categorie", label: "Catégorie", sortable: true, filterable: true }
+];
+
+function getOpValueForSort(op, col){
+  if(col === "montant") return op.montant;
+  if(col === "carte") return op.carte || "";
+  if(col === "sousCategorie") return op.sousCategorie || "";
+  if(col === "categorie") return op.categorie || "";
+  if(col === "libelle") return (op.libelle || "").toLowerCase();
+  return op.date;
+}
+
+function uniqueColumnValues(ops, col){
+  const set = new Set();
+  ops.forEach(op => {
+    let v;
+    if(col === "carte") v = op.carte || "—";
+    else if(col === "sousCategorie") v = op.sousCategorie || "—";
+    else if(col === "categorie") v = op.categorie || "À classer";
+    else v = op[col];
+    set.add(v);
+  });
+  return Array.from(set).sort((a,b) => String(a).localeCompare(String(b), 'fr'));
+}
+
+function renderOpsTable(){
+  const moisKey = STATE.moisActif;
+  const allOps = STATE.operations[moisKey] || [];
+  let ops = [...allOps];
+
+  // Filtre rapide (chips)
+  if(opsQuickFilter === "aClasser") ops = ops.filter(o => !o.categorie);
+  if(opsQuickFilter === "classees") ops = ops.filter(o => o.categorie);
+
+  // Filtres par colonne (clic sur en-tête)
+  Object.entries(opsColumnFilters).forEach(([col, val]) => {
+    ops = ops.filter(o => {
+      let v;
+      if(col === "carte") v = o.carte || "—";
+      else if(col === "sousCategorie") v = o.sousCategorie || "—";
+      else if(col === "categorie") v = o.categorie || "À classer";
+      else v = o[col];
+      return String(v) === String(val);
+    });
+  });
+
+  // Tri
+  ops.sort((a,b) => {
+    const va = getOpValueForSort(a, opsSortColumn);
+    const vb = getOpValueForSort(b, opsSortColumn);
+    let cmp;
+    if(typeof va === "number" && typeof vb === "number") cmp = va - vb;
+    else cmp = String(va).localeCompare(String(vb), 'fr');
+    return opsSortDir === "asc" ? cmp : -cmp;
+  });
+
+  const total = allOps.length;
+  const aClasser = total - nbOperationsClassees(moisKey);
+
+  if(total === 0){
+    return `
+    <div class="ops-card">
+      <div class="ops-head"><h3 class="ops-title display">Opérations du mois</h3></div>
+      <div class="empty-state">
+        <div class="display">Aucune opération pour ${moisLabel(moisKey)}</div>
+        <p>Importez le relevé CSV téléchargé depuis le site de votre banque pour commencer.</p>
+      </div>
+    </div>`;
+  }
+
+  const rows = ops.map(op => {
+    const montantClass = op.montant >= 0 ? "credit" : "debit";
+    const catCell = renderCategorieCell(op);
+    const isSelected = selectedOpIds.has(op.id);
+    return `
+    <tr data-op-row="${op.id}" class="${isSelected?'row-selected':''}">
+      <td class="col-check"><input type="checkbox" class="op-checkbox" data-op-id="${op.id}" ${isSelected?'checked':''}></td>
+      <td>${fmtDateFr(op.date)}</td>
+      <td>${escapeHtml(op.libelle)}</td>
+      <td>${op.carte ? escapeHtml(op.carte) : '<span class="muted">—</span>'}</td>
+      <td>${op.sousCategorie ? escapeHtml(op.sousCategorie) : '<span class="muted">—</span>'}</td>
+      <td class="amount-cell ${montantClass}">${op.montant>=0?'+':''}${fmtEUR(op.montant,true)}</td>
+      <td>${catCell}</td>
+    </tr>`;
+  }).join("");
+
+  const allVisibleIds = ops.map(o => o.id);
+  const allSelected = allVisibleIds.length > 0 && allVisibleIds.every(id => selectedOpIds.has(id));
+  const checkboxHeader = `<th class="col-check"><input type="checkbox" id="chkSelectAll" ${allSelected?'checked':''} title="Tout sélectionner"></th>`;
+
+  const headerCells = checkboxHeader + OPS_COLUMNS.map(col => {
+    const isSorted = opsSortColumn === col.key;
+    const arrow = isSorted ? (opsSortDir === "asc" ? " ▲" : " ▼") : "";
+    const hasFilter = opsColumnFilters.hasOwnProperty(col.key);
+    const filterDot = hasFilter ? '<span class="filter-dot"></span>' : "";
+    const alignStyle = col.align === "right" ? ' style="text-align:right"' : "";
+
+    let filterMenuHtml = "";
+    if(openFilterMenu === col.key){
+      const values = uniqueColumnValues(allOps, col.key);
+      const current = opsColumnFilters[col.key];
+      const items = values.map(v =>
+        `<div class="filter-menu-item ${current===v?'active':''}" data-filter-col="${col.key}" data-filter-val="${escapeAttr(v)}">${escapeHtml(String(v))}</div>`
+      ).join("");
+      filterMenuHtml = `
+        <div class="filter-menu" data-filter-menu="${col.key}">
+          <div class="filter-menu-item filter-menu-clear" data-filter-col="${col.key}" data-filter-val="__ALL__">Toutes les valeurs</div>
+          ${items}
+        </div>`;
+    }
+
+    return `<th${alignStyle}>
+      <span class="th-sort" data-sort-col="${col.key}">${col.label}${arrow}</span>
+      ${col.filterable ? `<span class="th-filter-btn ${hasFilter?'active':''}" data-filter-toggle="${col.key}">▾${filterDot}</span>` : ""}
+      ${filterMenuHtml}
+    </th>`;
+  }).join("");
+
+  const filtreActifCount = Object.keys(opsColumnFilters).length;
+  const clearFiltersBtn = filtreActifCount > 0
+    ? `<button class="btn btn-ghost btn-sm" id="btnClearColumnFilters">Effacer les filtres (${filtreActifCount})</button>`
+    : "";
+
+  const sousTotal = ops.reduce((s,o) => s + o.montant, 0);
+  const sousTotalClass = sousTotal >= 0 ? "credit" : "debit";
+  const filtresActifs = opsQuickFilter !== "toutes" || filtreActifCount > 0;
+  const sousTotalLabel = filtresActifs
+    ? `Sous-total (${ops.length} opération${ops.length>1?'s':''} affichée${ops.length>1?'s':''})`
+    : `Total (${ops.length} opération${ops.length>1?'s':''})`;
+
+  const selectionBar = selectedOpIds.size > 0 ? `
+    <div class="selection-bar">
+      <span>${selectedOpIds.size} opération${selectedOpIds.size>1?'s':''} sélectionnée${selectedOpIds.size>1?'s':''}</span>
+      <button class="btn btn-primary btn-sm" id="btnClasserSelection">Classer la sélection →</button>
+      <button class="btn btn-ghost btn-sm" id="btnDeselAll">Annuler la sélection</button>
+    </div>` : "";
+
+  return `
+  <div class="ops-card">
+    <div class="ops-head">
+      <h3 class="ops-title display">Opérations du mois</h3>
+      <div class="ops-filters">
+        <span class="chip ${opsQuickFilter==='toutes'?'active':''}" data-filter="toutes">Toutes (${total})</span>
+        <span class="chip ${opsQuickFilter==='aClasser'?'active':''}" data-filter="aClasser">À classer (${aClasser})</span>
+        <span class="chip ${opsQuickFilter==='classees'?'active':''}" data-filter="classees">Classées (${total-aClasser})</span>
+        ${clearFiltersBtn}
+        <button class="btn btn-ghost btn-sm" id="btnResetMois" title="Remettre toutes les opérations à l'état à classer">↺ Reset classement</button>
+      </div>
+    </div>
+    ${selectionBar}
+    <div class="ops-subtotal-bar">
+      <span class="ops-subtotal-label">${sousTotalLabel}</span>
+      <span class="ops-subtotal-value ${sousTotalClass} display">${sousTotal>=0?'+':''}${fmtEUR(sousTotal,true)}</span>
+    </div>
+    <div class="ops-table-scroll">
+      <table class="ops-table">
+        <thead><tr>${headerCells}</tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+function renderCategorieCell(op){
+  if(op.categorie){
+    return `
+      <span class="cat-pill-wrap" data-cat-cell="${op.id}">
+        <span class="cat-pill assigned" data-cat-toggle="${op.id}" title="Cliquer pour changer la catégorie">${escapeHtml(op.categorie)}</span>
+        <button class="cat-reset-btn" data-uncategorize="${op.id}" title="Remettre à classer">✕</button>
+      </span>
+    `;
+  }
+  return `<span class="cat-pill empty" data-classify-one="${op.id}">À classer →</span>`;
+}
+
+function renderInlineCategorySelect(opId){
+  const op = (STATE.operations[STATE.moisActif]||[]).find(o => o.id === opId);
+  if(!op) return "";
+  const sections = ["revenus","fixes","variables","epargne"];
+  const optionsHtml = sections.map(secKey => {
+    const sec = CATEGORIES[secKey];
+    const opts = sec.items.map(cat =>
+      `<option value="${escapeAttr(cat)}" ${op.categorie===cat?'selected':''}>${cat}</option>`
+    ).join("");
+    return `<optgroup label="${sec.label}">${opts}</optgroup>`;
+  }).join("");
+  return `<select class="inline-cat-select" data-inline-select="${opId}" autofocus>
+    <option value="">— Choisir —</option>
+    ${optionsHtml}
+  </select>`;
+}
+
+function escapeHtml(s){
+  const d = document.createElement("div");
+  d.textContent = s;
+  return d.innerHTML;
+}
+function escapeAttr(s){
+  return String(s).replace(/"/g,'&quot;');
+}
+
+let toastTimer = null;
+function showToast(msg){
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 3200);
+}
+
+// ===== events.js =====
+// =========================================================
+// EVENTS - DASHBOARD
+// =========================================================
+
+function attachTopbarEvents(){
+  const btnToggle = document.getElementById("btnToggleSynthese");
+  if(btnToggle){
+    btnToggle.addEventListener("click", () => {
+      currentView = currentView === "synthese" ? "dashboard" : "synthese";
+      render();
+    });
+  }
+  const btnExport = document.getElementById("btnExport");
+  if(btnExport) btnExport.addEventListener("click", exportDonnees);
+
+  const btnImportJSON = document.getElementById("btnImportJSON");
+  const jsonFileInput = document.getElementById("jsonFileInput");
+  if(btnImportJSON && jsonFileInput){
+    btnImportJSON.addEventListener("click", () => jsonFileInput.click());
+    jsonFileInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if(file) openImportConfirm(file);
+      e.target.value = "";
+    });
+  }
+
+  const btnApprentissages = document.getElementById("btnGererApprentissages");
+  if(btnApprentissages){
+    btnApprentissages.addEventListener("click", () => ouvrirGestionApprentissages());
+  }
+
+  // ---- Sync indicator : clic gauche = forcer pull, clic droit = ouvrir config ----
+  const syncEl = document.getElementById("syncIndicator");
+  if(syncEl){
+    syncEl.addEventListener("click", () => {
+      if(!SYNC_CONFIG.enabled){
+        ouvrirConfigSync();
+      } else {
+        // Mini menu : forcer pull ou ouvrir config
+        const menu = document.createElement("div");
+        menu.style.cssText = `
+          position:fixed; background:var(--card); border:1px solid var(--line);
+          border-radius:10px; box-shadow:0 8px 24px -8px rgba(0,0,0,0.18);
+          z-index:100; padding:6px 0; min-width:200px; font-size:13px;
+        `;
+        const rect = syncEl.getBoundingClientRect();
+        menu.style.top = (rect.bottom + 6) + "px";
+        menu.style.right = (window.innerWidth - rect.right) + "px";
+
+        // Infos sur la dernière sync
+        const infoHtml = syncState.lastUpdatedBy
+          ? `<div style="padding:8px 14px 4px; font-size:11px; color:var(--ink-soft);">Dernière sync : ${syncState.lastUpdatedBy}</div>`
+          : "";
+
+        menu.innerHTML = `
+          ${infoHtml}
+          <div class="sync-menu-item" id="syncMenuPull">↓ Charger depuis le cloud</div>
+          <div class="sync-menu-item" id="syncMenuConfig">⚙ Paramètres de sync</div>
+        `;
+        document.body.appendChild(menu);
+        menu.querySelector("#syncMenuPull").addEventListener("click", () => { menu.remove(); forcePull(); });
+        menu.querySelector("#syncMenuConfig").addEventListener("click", () => { menu.remove(); ouvrirConfigSync(); });
+        setTimeout(() => document.addEventListener("click", () => menu.remove(), { once: true }), 50);
+      }
+    });
+    updateSyncIndicator();
+  }
+
+  if(currentView === "dashboard"){
+    const moisSelect = document.getElementById("moisSelect");
+    if(moisSelect){
+      moisSelect.addEventListener("change", (e) => {
+        STATE.moisActif = e.target.value;
+        opsQuickFilter = "toutes";
+        opsColumnFilters = {};
+        openFilterMenu = null;
+        drillDownSection = null;
+        selectedOpIds.clear();
+        render();
+      });
+    }
+    const btnNouveauMois = document.getElementById("btnNouveauMois");
+    if(btnNouveauMois) btnNouveauMois.addEventListener("click", openNouveauMoisModal);
+    const btnImportCSV = document.getElementById("btnImportCSV");
+    if(btnImportCSV) btnImportCSV.addEventListener("click", () => document.getElementById("csvFileInput").click());
+    const csvFileInput = document.getElementById("csvFileInput");
+    if(csvFileInput) csvFileInput.addEventListener("change", handleCSVFile);
+    const btnClasser = document.getElementById("btnClasser");
+    if(btnClasser) btnClasser.addEventListener("click", () => openClassificationModal());
+  }
+}
+
+function attachDashboardEvents(){
+  attachTopbarEvents();
+
+  const btnClasserHero = document.getElementById("btnClasserHero");
+  if(btnClasserHero) btnClasserHero.addEventListener("click", () => openClassificationModal());
+
+  document.querySelectorAll(".cat-prev-input").forEach(input => {
+    input.addEventListener("change", (e) => {
+      const cat = e.target.dataset.cat;
+      const val = parseFloat(e.target.value) || 0;
+      STATE.previsionnel[STATE.moisActif][cat] = val;
+      saveState();
+      render();
+    });
+  });
+
+  // ---- Solde début de mois (éditable) ----
+  const soldeDebutInput = document.getElementById("soldeDebutInput");
+  if(soldeDebutInput){
+    soldeDebutInput.addEventListener("change", (e) => {
+      const val = parseFloat(e.target.value) || 0;
+      setSoldeDebut(STATE.moisActif, val);
+      render();
+      showToast("Solde de début de mois mis à jour.");
+    });
+  }
+
+  // ---- Filtres rapides (chips) ----
+  document.querySelectorAll(".chip[data-filter]").forEach(chip => {
+    chip.addEventListener("click", (e) => {
+      opsQuickFilter = e.target.dataset.filter;
+      render();
+    });
+  });
+
+  // ---- Tri par en-tête ----
+  document.querySelectorAll(".th-sort[data-sort-col]").forEach(el => {
+    el.addEventListener("click", (e) => {
+      const col = e.currentTarget.dataset.sortCol;
+      if(opsSortColumn === col){
+        opsSortDir = opsSortDir === "asc" ? "desc" : "asc";
+      } else {
+        opsSortColumn = col;
+        opsSortDir = "asc";
+      }
+      openFilterMenu = null;
+      render();
+    });
+  });
+
+  // ---- Filtres par colonne ----
+  document.querySelectorAll("[data-filter-toggle]").forEach(el => {
+    el.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const col = e.currentTarget.dataset.filterToggle;
+      openFilterMenu = openFilterMenu === col ? null : col;
+      render();
+    });
+  });
+  document.querySelectorAll("[data-filter-col]").forEach(el => {
+    el.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const col = e.currentTarget.dataset.filterCol;
+      const val = e.currentTarget.dataset.filterVal;
+      if(val === "__ALL__") delete opsColumnFilters[col];
+      else opsColumnFilters[col] = val;
+      openFilterMenu = null;
+      render();
+    });
+  });
+  document.querySelectorAll(".filter-menu").forEach(menu => {
+    menu.addEventListener("click", (e) => e.stopPropagation());
+  });
+  if(openFilterMenu){
+    document.addEventListener("click", closeFilterMenuOnce, { once: true });
+  }
+  const clearBtn = document.getElementById("btnClearColumnFilters");
+  if(clearBtn){
+    clearBtn.addEventListener("click", () => { opsColumnFilters = {}; render(); });
+  }
+
+  // ---- Checkboxes : sélection multiple ----
+  const chkAll = document.getElementById("chkSelectAll");
+  if(chkAll){
+    chkAll.addEventListener("change", () => {
+      // On lit les IDs directement depuis les checkboxes actuellement rendues
+      // (elles représentent exactement les lignes filtrées visibles)
+      const checkboxesVisibles = document.querySelectorAll(".op-checkbox");
+      if(chkAll.checked){
+        checkboxesVisibles.forEach(cb => selectedOpIds.add(cb.dataset.opId));
+      } else {
+        checkboxesVisibles.forEach(cb => selectedOpIds.delete(cb.dataset.opId));
+      }
+      render();
+    });
+  }
+  document.querySelectorAll(".op-checkbox").forEach(cb => {
+    cb.addEventListener("change", (e) => {
+      const opId = e.currentTarget.dataset.opId;
+      if(e.currentTarget.checked) selectedOpIds.add(opId);
+      else selectedOpIds.delete(opId);
+      render();
+    });
+  });
+
+  // ---- Classer la sélection ----
+  const btnClasserSel = document.getElementById("btnClasserSelection");
+  if(btnClasserSel){
+    btnClasserSel.addEventListener("click", () => {
+      const ids = Array.from(selectedOpIds);
+      if(ids.length === 0) return;
+      openClassificationModal(null, ids);
+    });
+  }
+  const btnDeselAll = document.getElementById("btnDeselAll");
+  if(btnDeselAll){
+    btnDeselAll.addEventListener("click", () => { selectedOpIds.clear(); render(); });
+  }
+
+  // ---- Cellule catégorie : classer (popup), réaffecter (popup), déclasser ----
+  document.querySelectorAll("[data-classify-one]").forEach(el => {
+    el.addEventListener("click", (e) => {
+      openClassificationModal(e.currentTarget.dataset.classifyOne);
+    });
+  });
+  document.querySelectorAll("[data-cat-toggle]").forEach(el => {
+    el.addEventListener("click", (e) => {
+      // Réaffectation : ouvre la popup sur cette seule opération
+      openClassificationModal(e.currentTarget.dataset.catToggle);
+    });
+  });
+  document.querySelectorAll("[data-uncategorize]").forEach(el => {
+    el.addEventListener("click", (e) => {
+      e.stopPropagation();
+      declasserOperation(STATE.moisActif, e.currentTarget.dataset.uncategorize);
+      render();
+      showToast("Opération remise à classer.");
+    });
+  });
+
+  // ---- Reset classement du mois ----
+  const btnResetMois = document.getElementById("btnResetMois");
+  if(btnResetMois) btnResetMois.addEventListener("click", () => openResetMoisConfirm());
+
+  // ---- Menu "Options du mois" (réinit opérations / suppression onglet) ----
+  const btnMoisOptions = document.getElementById("btnMoisOptions");
+  if(btnMoisOptions){
+    btnMoisOptions.addEventListener("click", (e) => {
+      e.stopPropagation();
+      moisOptionsOpen = !moisOptionsOpen;
+      render();
+    });
+  }
+  if(moisOptionsOpen){
+    document.addEventListener("click", closeMoisOptionsOnce, { once: true });
+  }
+  const btnReinitMois = document.getElementById("btnReinitMoisComplet");
+  if(btnReinitMois){
+    btnReinitMois.addEventListener("click", () => {
+      moisOptionsOpen = false;
+      openReinitMoisCompletConfirm();
+    });
+  }
+  const btnSupprimerMoisOnglet = document.getElementById("btnSupprimerMoisOnglet");
+  if(btnSupprimerMoisOnglet){
+    btnSupprimerMoisOnglet.addEventListener("click", () => {
+      moisOptionsOpen = false;
+      openSuppressionMoisConfirm();
+    });
+  }
+}
+
+function closeMoisOptionsOnce(){
+  if(moisOptionsOpen){
+    moisOptionsOpen = false;
+    render();
+  }
+}
+
+function closeFilterMenuOnce(){
+  if(openFilterMenu){
+    openFilterMenu = null;
+    render();
+  }
+}
+
+function openReinitMoisCompletConfirm(){
+  const moisKey = STATE.moisActif;
+  const overlay = document.createElement("div");
+  overlay.className = "modal-overlay open";
+  overlay.innerHTML = `
+    <div class="simple-modal-card">
+      <h3 class="display">Réinitialiser ${moisLabel(moisKey)} complètement ?</h3>
+      <p>Toutes les opérations du mois (${(STATE.operations[moisKey]||[]).length} lignes) seront supprimées. Vous devrez réimporter un fichier CSV pour ce mois. Le prévisionnel et les soldes seront conservés.</p>
+      <div class="simple-modal-actions">
+        <button class="btn btn-ghost" id="cancelReinitComplet">Annuler</button>
+        <button class="btn btn-primary" id="confirmReinitComplet" style="background:var(--rouge);">Supprimer les opérations</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.addEventListener("click", (e) => { if(e.target===overlay) overlay.remove(); });
+  overlay.querySelector("#cancelReinitComplet").addEventListener("click", () => overlay.remove());
+  overlay.querySelector("#confirmReinitComplet").addEventListener("click", () => {
+    reinitialiserMoisComplet(moisKey);
+    selectedOpIds.clear();
+    overlay.remove();
+    render();
+    showToast(`Opérations de ${moisLabel(moisKey)} supprimées. Réimportez un CSV.`);
+  });
+}
+
+function openSuppressionMoisConfirm(){
+  const moisKey = STATE.moisActif;
+  const nbOps = (STATE.operations[moisKey]||[]).length;
+  const estDernierMois = STATE.moisListe.length === 1;
+  const overlay = document.createElement("div");
+  overlay.className = "modal-overlay open";
+  overlay.innerHTML = `
+    <div class="simple-modal-card">
+      <h3 class="display">Supprimer l'onglet ${moisLabel(moisKey)} ?</h3>
+      <p>
+        Cette action supprime entièrement le mois : ses ${nbOps} opération${nbOps>1?'s':''}, son prévisionnel et son solde de début de mois.
+        L'onglet disparaîtra de la liste des mois. Cette action est irréversible.
+        ${estDernierMois ? `<br><br><strong>C'est le seul mois existant</strong> : un nouvel onglet ${moisLabel(moisKey)} vide sera recréé automatiquement à la place.` : ``}
+      </p>
+      <div class="simple-modal-actions">
+        <button class="btn btn-ghost" id="cancelSuppressionMois">Annuler</button>
+        <button class="btn btn-primary" id="confirmSuppressionMois" style="background:var(--rouge);">Supprimer ce mois</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.addEventListener("click", (e) => { if(e.target===overlay) overlay.remove(); });
+  overlay.querySelector("#cancelSuppressionMois").addEventListener("click", () => overlay.remove());
+  overlay.querySelector("#confirmSuppressionMois").addEventListener("click", () => {
+    const label = moisLabel(moisKey);
+    supprimerMoisCompletement(moisKey);
+    selectedOpIds.clear();
+    opsColumnFilters = {};
+    openFilterMenu = null;
+    drillDownSection = null;
+    overlay.remove();
+    render();
+    showToast(`Le mois ${label} a été supprimé.`);
+  });
+}
+
+function openResetMoisConfirm(){
+  const moisKey = STATE.moisActif;
+  const overlay = document.createElement("div");
+  overlay.className = "modal-overlay open";
+  overlay.innerHTML = `
+    <div class="simple-modal-card">
+      <h3 class="display">Réinitialiser le classement ?</h3>
+      <p>Toutes les opérations de ${moisLabel(moisKey)} seront remises à l'état "à classer". Cette action ne supprime pas les opérations, seulement leur catégorie.</p>
+      <div class="simple-modal-actions">
+        <button class="btn btn-ghost" id="cancelReset">Annuler</button>
+        <button class="btn btn-primary" id="confirmReset" style="background:var(--rouge);">Réinitialiser</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.addEventListener("click", (e) => { if(e.target===overlay) overlay.remove(); });
+  overlay.querySelector("#cancelReset").addEventListener("click", () => overlay.remove());
+  overlay.querySelector("#confirmReset").addEventListener("click", () => {
+    resetClassementMois(moisKey);
+    overlay.remove();
+    render();
+    showToast("Classement réinitialisé pour " + moisLabel(moisKey) + ".");
+  });
+}
+
+// ---------- Import CSV ----------
+function handleCSVFile(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (evt) => {
+    try{
+      const ops = parseCSVBancaire(evt.target.result);
+      if(ops.length === 0){
+        showToast("Aucune opération détectée dans ce fichier. Vérifiez le format.");
+        return;
+      }
+
+      const moisAvantImport = STATE.moisActif;
+      const resultat = importerOperationsMultiMois(ops);
+
+      if(resultat.totalAjoutees === 0){
+        showToast("Toutes les opérations de ce fichier étaient déjà importées.");
+        return;
+      }
+
+      // Se positionner sur le dernier mois concerné par l'import (le plus récent)
+      const dernierMois = resultat.moisConcernes[resultat.moisConcernes.length - 1];
+      if(dernierMois) STATE.moisActif = dernierMois;
+      saveState();
+
+      // Message récapitulatif
+      if(resultat.moisConcernes.length > 1){
+        const detail = resultat.moisConcernes
+          .map(m => `${moisLabel(m)} (${resultat.parMois[m]})`)
+          .join(", ");
+        const creesMsg = resultat.moisCrees.length > 0
+          ? ` — ${resultat.moisCrees.length} onglet${resultat.moisCrees.length>1?'s':''} créé${resultat.moisCrees.length>1?'s':''} automatiquement`
+          : "";
+        showToast(`${resultat.totalAjoutees} opération(s) réparties sur ${resultat.moisConcernes.length} mois${creesMsg} : ${detail}.`);
+      } else {
+        const creesMsg = resultat.moisCrees.length > 0 ? " (nouvel onglet créé)" : "";
+        showToast(`${resultat.totalAjoutees} opération(s) importée(s) pour ${moisLabel(dernierMois)}${creesMsg}.`);
+      }
+
+      render();
+
+      // Pré-classification automatique basée sur les règles mémorisées,
+      // appliquée à tous les mois concernés par cet import (pas seulement le mois actif)
+      if(STATE.regles && Object.keys(STATE.regles).length > 0){
+        let totalPreClassees = [];
+        resultat.moisConcernes.forEach(moisKey => {
+          const nouvelles = (STATE.operations[moisKey]||[]).filter(o => !o.categorie);
+          const { preClassees } = preClasserOperations(nouvelles);
+          preClassees.forEach(item => totalPreClassees.push({ ...item, moisKey }));
+        });
+        if(totalPreClassees.length > 0){
+          setTimeout(() => ouvrirValidationPreclassificationMultiMois(totalPreClassees), 400);
+        }
+      }
+    }catch(err){
+      console.error(err);
+      showToast("Erreur lors de la lecture du fichier CSV.");
+    }
+  };
+  reader.readAsText(file, "UTF-8");
+  e.target.value = "";
+}
+
+function parseCSVBancaire(text){
+  const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
+  if(lines.length < 2) return [];
+
+  const header = lines[0].split(";");
+  const idx = (name) => header.findIndex(h => h.trim().toLowerCase() === name.toLowerCase());
+
+  const iDate = idx("Date de comptabilisation");
+  const iLibelle = idx("Libelle simplifie");
+  const iDetail = idx("Informations complementaires");
+  const iSousCat = idx("Sous categorie");
+  const iDebit = idx("Debit");
+  const iCredit = idx("Credit");
+
+  // Si les colonnes attendues ne sont pas trouvées, on retombe sur des positions par défaut
+  const useDefaults = iDate === -1 || iDebit === -1;
+  const colDate = useDefaults ? 0 : iDate;
+  const colLibelle = useDefaults ? 1 : iLibelle;
+  const colDetail = useDefaults ? 4 : iDetail;
+  const colSousCat = useDefaults ? 7 : iSousCat;
+  const colDebit = useDefaults ? 8 : iDebit;
+  const colCredit = useDefaults ? 9 : iCredit;
+
+  const ops = [];
+  for(let i=1; i<lines.length; i++){
+    const cols = lines[i].split(";");
+    if(cols.length <= Math.max(colDate, colLibelle, colDebit)) continue;
+
+    const dateStr = (cols[colDate]||"").trim();
+    const m = dateStr.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if(!m) continue;
+    const isoDate = `${m[3]}-${m[2]}-${m[1]}`;
+
+    const libelle = (cols[colLibelle]||"").trim();
+    const detail = (cols[colDetail]||"").trim();
+    const sousCategorie = (cols[colSousCat]||"").trim();
+    const debitStr = (cols[colDebit]||"").trim();
+    const creditStr = (cols[colCredit]||"").trim();
+
+    let montant;
+    if(creditStr){
+      montant = parseFloat(creditStr.replace(",","."));
+    } else if(debitStr){
+      montant = parseFloat(debitStr.replace(",","."));
+    } else {
+      continue;
+    }
+    if(isNaN(montant)) continue;
+
+    const carte = extractCarteFromDetail(detail);
+
+    ops.push({ date: isoDate, libelle, detail, sousCategorie, carte, montant });
+  }
+  return ops;
+}
+
+function extractCarteFromDetail(detail){
+  if(/CB\*{2,}2622/.test(detail)) return "CB Cyrille";
+  if(/CB\*{2,}4138/.test(detail)) return "CB Cedric";
+  return null;
+}
+
+// ---------- Export / sauvegarde manuelle ----------
+function exportDonnees(){
+  const blob = new Blob([JSON.stringify(STATE, null, 1)], {type: "application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `budget-famille-sauvegarde-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast("Sauvegarde téléchargée.");
+}
+
+function importerDonneesJSON(file){
+  const reader = new FileReader();
+  reader.onload = (evt) => {
+    try{
+      const data = JSON.parse(evt.target.result);
+      if(!data.operations || !data.moisListe){
+        showToast("Fichier de sauvegarde invalide.");
+        return;
+      }
+      STATE = data;
+      if(!STATE.soldeCompte) STATE.soldeCompte = {};
+      if(!STATE.regles) STATE.regles = {};
+      // Compatibilité anciennes sauvegardes : nettoyer finManuel
+      Object.keys(STATE.soldeCompte).forEach(k => {
+        if(STATE.soldeCompte[k].finManuel !== undefined) delete STATE.soldeCompte[k].finManuel;
+      });
+      saveState();
+      currentView = "dashboard";
+      opsQuickFilter = "toutes";
+      opsColumnFilters = {};
+      openFilterMenu = null;
+      drillDownSection = null;
+      render();
+      showToast("Données restaurées avec succès.");
+    }catch(err){
+      showToast("Impossible de lire ce fichier de sauvegarde.");
+    }
+  };
+  reader.readAsText(file, "UTF-8");
+}
+
+function openImportConfirm(file){
+  const overlay = document.createElement("div");
+  overlay.className = "modal-overlay open";
+  overlay.innerHTML = `
+    <div class="simple-modal-card">
+      <h3 class="display">Restaurer cette sauvegarde ?</h3>
+      <p>Toutes les données actuellement présentes dans ce navigateur (mois, opérations classées, prévisionnel) seront remplacées par le contenu du fichier "${escapeHtml(file.name)}". Cette action est irréversible, sauf si vous avez vous-même une autre sauvegarde de l'état actuel.</p>
+      <div class="simple-modal-actions">
+        <button class="btn btn-ghost" id="cancelImportJSON">Annuler</button>
+        <button class="btn btn-primary" id="confirmImportJSON" style="background:var(--rouge);">Restaurer</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.addEventListener("click", (e) => { if(e.target===overlay) overlay.remove(); });
+  overlay.querySelector("#cancelImportJSON").addEventListener("click", () => overlay.remove());
+  overlay.querySelector("#confirmImportJSON").addEventListener("click", () => {
+    importerDonneesJSON(file);
+    overlay.remove();
+  });
+}
+
+// ---------- Nouveau mois ----------
+function openNouveauMoisModal(){
+  const suggestion = moisSuivantKey(STATE.moisListe[STATE.moisListe.length-1]);
+  const overlay = document.createElement("div");
+  overlay.className = "modal-overlay open";
+  overlay.innerHTML = `
+    <div class="simple-modal-card">
+      <h3 class="display">Créer un nouveau mois</h3>
+      <p>Le prévisionnel sera repris du mois précédent. Vous pourrez l'ajuster ensuite.</p>
+      <select id="nouveauMoisSelect">
+        ${Array.from({length:12}, (_,i) => {
+          const key = suggestion.slice(0,4) + "-" + String(i+1).padStart(2,"0");
+          const altKey = (parseInt(suggestion.slice(0,4))+1) + "-" + String(i+1).padStart(2,"0");
+          return "";
+        }).join("")}
+      </select>
+      <div id="moisPickerWrap"></div>
+      <div class="simple-modal-actions">
+        <button class="btn btn-ghost" id="cancelNouveauMois">Annuler</button>
+        <button class="btn btn-primary" id="confirmNouveauMois">Créer</button>
+      </div>
+    </div>
+  `;
+  // Remplace le select basique par un vrai picker mois+année simple
+  const wrap = overlay.querySelector("#moisPickerWrap");
+  const [sa, sm] = suggestion.split("-");
+  wrap.innerHTML = `
+    <div style="display:flex; gap:10px;">
+      <select id="moisNom" style="flex:1;">
+        ${MOIS_NOMS.map((n,i) => `<option value="${i+1}" ${i+1===parseInt(sm)?'selected':''}>${n}</option>`).join("")}
+      </select>
+      <input type="number" id="moisAnnee" value="${sa}" style="width:100px;">
+    </div>
+  `;
+  overlay.querySelector("#nouveauMoisSelect").remove();
+
+  document.body.appendChild(overlay);
+
+  overlay.querySelector("#cancelNouveauMois").addEventListener("click", () => overlay.remove());
+  overlay.addEventListener("click", (e) => { if(e.target===overlay) overlay.remove(); });
+  overlay.querySelector("#confirmNouveauMois").addEventListener("click", () => {
+    const m = parseInt(overlay.querySelector("#moisNom").value, 10);
+    const a = parseInt(overlay.querySelector("#moisAnnee").value, 10);
+    const key = a + "-" + String(m).padStart(2,"0");
+    if(STATE.moisListe.includes(key)){
+      showToast("Ce mois existe déjà.");
+      return;
+    }
+    creerNouveauMois(key);
+    STATE.moisActif = key;
+    saveState();
+    overlay.remove();
+    render();
+    showToast(`${moisLabel(key)} créé.`);
+  });
+}
+
+// ===== classify.js =====
+// =========================================================
+// MODAL DE CLASSIFICATION
+// =========================================================
+
+let classificationQueue = [];
+let classificationDone = 0;
+let classificationTotal = 0;
+let classificationMode = "one-by-one"; // "one-by-one" | "group"
+
+function openClassificationModal(specificOpId, opIdList){
+  const moisKey = STATE.moisActif;
+  const ops = STATE.operations[moisKey] || [];
+
+  if(opIdList && opIdList.length > 0){
+    // Mode sélection multiple : on classe toutes les ops de la liste avec la même catégorie
+    // On ouvre la popup sur la première, et en validant ça applique à toutes
+    classificationQueue = [...opIdList];
+    classificationMode = "group"; // applique la catégorie choisie à tous d'un coup
+  } else if(specificOpId){
+    classificationQueue = [specificOpId];
+    classificationMode = "one-by-one";
+  } else {
+    classificationQueue = ops.filter(o => !o.categorie).map(o => o.id);
+    classificationMode = "one-by-one";
+  }
+
+  if(classificationQueue.length === 0){
+    showToast("Toutes les opérations sont déjà classées !");
+    return;
+  }
+
+  classificationTotal = classificationQueue.length;
+  classificationDone = 0;
+
+  const overlay = document.createElement("div");
+  overlay.className = "modal-overlay open";
+  overlay.id = "classifyOverlay";
+  document.body.appendChild(overlay);
+
+  renderClassificationStep();
+
+  overlay.addEventListener("click", (e) => {
+    if(e.target === overlay) closeClassificationModal();
+  });
+  document.addEventListener("keydown", handleClassifyKeydown);
+}
+
+function closeClassificationModal(){
+  const overlay = document.getElementById("classifyOverlay");
+  if(overlay) overlay.remove();
+  document.removeEventListener("keydown", handleClassifyKeydown);
+  render();
+}
+
+function handleClassifyKeydown(e){
+  if(e.key === "Escape") closeClassificationModal();
+}
+
+function renderClassificationStep(){
+  const overlay = document.getElementById("classifyOverlay");
+  if(!overlay) return;
+
+  if(classificationQueue.length === 0){
+    closeClassificationModal();
+    showToast("Toutes les opérations sont classées !");
+    return;
+  }
+
+  const moisKey = STATE.moisActif;
+  const opId = classificationQueue[0];
+  const op = (STATE.operations[moisKey]||[]).find(o => o.id === opId);
+
+  if(!op){
+    classificationQueue.shift();
+    renderClassificationStep();
+    return;
+  }
+
+  const montantClass = op.montant >= 0 ? "credit" : "debit";
+  const numero = classificationDone + 1;
+
+  const sections = ["revenus","fixes","variables","epargne"];
+  const sectionTitles = {
+    revenus: "t-revenus", fixes: "t-fixes", variables: "t-variables", epargne: "t-epargne"
+  };
+
+  const catBlocks = sections.map(secKey => {
+    const sec = CATEGORIES[secKey];
+    const stamps = sec.items.map(cat =>
+      `<button class="cat-stamp ${sectionTitles[secKey]}" data-cat="${escapeAttr(cat)}">${cat}</button>`
+    ).join("");
+    return `
+      <div class="cat-section-title ${sectionTitles[secKey]}">${sec.label}</div>
+      <div class="cat-grid">${stamps}</div>
+    `;
+  }).join("");
+
+  const modeGroupLabel = classificationMode === "group" && classificationQueue.length > 1
+    ? `<div style="font-size:12px; color:var(--terracotta); font-weight:600; margin-top:4px;">Cette catégorie sera appliquée à ${classificationQueue.length} opérations sélectionnées</div>`
+    : "";
+
+  overlay.innerHTML = `
+    <div class="modal-card">
+      <div class="modal-head">
+        <div>
+          <div class="modal-progress">${classificationMode === "group" && classificationQueue.length > 1 ? `Classement groupé — ${classificationQueue.length} opérations` : `Opération ${numero} / ${classificationTotal}`}</div>
+          <div class="modal-op-libelle display">${escapeHtml(op.libelle)}</div>
+          <div class="modal-op-detail">${fmtDateFr(op.date)}${op.detail ? " · " + escapeHtml(op.detail) : ""}</div>
+          ${modeGroupLabel}
+        </div>
+        <div class="modal-op-amount ${montantClass} display">${op.montant>=0?'+':''}${fmtEUR(op.montant,true)}</div>
+        <button class="modal-close" id="closeClassifyBtn" aria-label="Fermer">✕</button>
+      </div>
+      <div class="modal-body">
+        ${catBlocks}
+      </div>
+      <div class="modal-foot">
+        ${classificationMode !== "group" ? `<button class="btn btn-ghost btn-sm" id="skipOpBtn">Passer cette opération</button>` : `<span></span>`}
+        <span style="font-size:12px; color:var(--ink-soft);">Cliquez sur une catégorie pour valider</span>
+      </div>
+    </div>
+  `;
+
+  overlay.querySelector("#closeClassifyBtn").addEventListener("click", closeClassificationModal);
+  const skipBtn = overlay.querySelector("#skipOpBtn");
+  if(skipBtn){
+    skipBtn.addEventListener("click", () => {
+      const skipped = classificationQueue.shift();
+      classificationQueue.push(skipped);
+      if(classificationQueue.length === 1){
+        closeClassificationModal();
+        showToast("Opération mise de côté. Relancez le classement pour la traiter.");
+        return;
+      }
+      renderClassificationStep();
+    });
+  }
+  overlay.querySelectorAll(".cat-stamp").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const moisKey = STATE.moisActif;
+      const categorie = btn.dataset.cat;
+
+      if(classificationMode === "group"){
+        classificationQueue.forEach(id => {
+          const op = (STATE.operations[moisKey]||[]).find(o => o.id === id);
+          if(op){
+            classerOperation(moisKey, id, categorie);
+            apprentissage(op.libelle, categorie);
+          }
+        });
+        selectedOpIds.clear();
+        closeClassificationModal();
+        showToast(`${classificationTotal} opération${classificationTotal>1?'s':''} classée${classificationTotal>1?'s':''} en "${categorie}".`);
+      } else {
+        classerOperation(moisKey, opId, categorie);
+        // Apprentissage : mémoriser libellé → catégorie
+        const op = (STATE.operations[moisKey]||[]).find(o => o.id === opId);
+        if(op) apprentissage(op.libelle, categorie);
+        classificationQueue.shift();
+        classificationDone++;
+        renderClassificationStep();
+      }
+    });
+  });
+}
+
+// ===== preclass.js =====
+// =========================================================
+// VALIDATION RAPIDE DES PRÉ-CLASSIFICATIONS
+// =========================================================
+// Affiché après import CSV si des règles mémorisées correspondent
+// à des opérations. Présente un tableau "ces opérations ont été
+// reconnues automatiquement — confirmez ou corrigez".
+
+// Point d'entrée pour un import mono-mois (compatibilité avec l'existant)
+function ouvrirValidationPreclassification(moisKey, preClassees){
+  if(!preClassees || preClassees.length === 0) return;
+  const items = preClassees.map(item => ({ ...item, moisKey }));
+  ouvrirValidationPreclassificationMultiMois(items);
+}
+
+// Point d'entrée pour un import potentiellement réparti sur plusieurs mois.
+// Chaque item doit porter sa propre propriété moisKey.
+function ouvrirValidationPreclassificationMultiMois(items){
+  if(!items || items.length === 0) return;
+  const preClassees = items;
+  const multiMois = new Set(items.map(i => i.moisKey)).size > 1;
+
+  const overlay = document.createElement("div");
+  overlay.className = "modal-overlay open";
+  overlay.id = "preClassOverlay";
+
+  const lignes = preClassees.map((item, idx) => {
+    const montantClass = item.op.montant >= 0 ? "credit" : "debit";
+    const confiance = item.score >= 5 ? "haute" : item.score >= 2 ? "moyenne" : "faible";
+    const confianceColor = item.score >= 5 ? "var(--sapin)" : item.score >= 2 ? "var(--ambre)" : "var(--ink-soft)";
+    const colMois = multiMois ? `<td style="padding:10px 8px; font-size:12px; color:var(--ink-soft); white-space:nowrap;">${moisLabel(item.moisKey)}</td>` : "";
+    return `
+    <tr data-preclass-idx="${idx}">
+      <td style="padding:10px 14px;">
+        <input type="checkbox" class="op-checkbox preclass-chk" data-idx="${idx}" checked>
+      </td>
+      ${colMois}
+      <td style="padding:10px 8px; font-size:12.5px; color:var(--ink-soft);">${fmtDateFr(item.op.date)}</td>
+      <td style="padding:10px 8px; font-size:13px; font-weight:600;">${escapeHtml(item.op.libelle)}</td>
+      <td style="padding:10px 8px; text-align:right; font-size:13px;" class="amount-cell ${montantClass}">
+        ${item.op.montant >= 0 ? '+' : ''}${fmtEUR(item.op.montant, true)}
+      </td>
+      <td style="padding:10px 8px;">
+        <span class="cat-pill assigned preclass-cat-pill" data-idx="${idx}" style="cursor:pointer;" title="Cliquer pour changer">
+          ${escapeHtml(item.categorie)}
+        </span>
+      </td>
+      <td style="padding:10px 8px; font-size:11px; color:${confianceColor}; font-weight:600; text-transform:uppercase; letter-spacing:.04em;">
+        ${confiance}
+      </td>
+    </tr>`;
+  }).join("");
+
+  overlay.innerHTML = `
+    <div class="modal-card" style="max-width:820px; max-height:90vh;">
+      <div class="modal-head">
+        <div>
+          <div class="modal-progress">Apprentissage automatique</div>
+          <div class="modal-op-libelle display">${preClassees.length} opération${preClassees.length>1?'s':''} reconnue${preClassees.length>1?'s':''}</div>
+          <div class="modal-op-detail">Ces opérations correspondent à des libellés déjà classés. Vérifiez et confirmez (ou corrigez) les catégories proposées.</div>
+        </div>
+        <button class="modal-close" id="closePreClassBtn" aria-label="Fermer">✕</button>
+      </div>
+      <div class="modal-body" style="padding:0;">
+        <div style="padding:12px 22px 6px; background:var(--ambre-soft); font-size:12.5px; color:var(--ink); border-bottom:1px solid var(--line);">
+          <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+            <input type="checkbox" id="chkPreclassAll" checked style="accent-color:var(--terracotta);">
+            <span>Tout sélectionner / désélectionner</span>
+          </label>
+        </div>
+        <div style="overflow-y:auto; max-height:calc(90vh - 280px);">
+          <table style="width:100%; border-collapse:collapse;">
+            <thead>
+              <tr style="background:var(--cream-deep);">
+                <th style="padding:8px 14px; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); font-weight:600; width:36px;"></th>
+                ${multiMois ? `<th style="padding:8px 8px; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); font-weight:600;">Mois</th>` : ""}
+                <th style="padding:8px 8px; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); font-weight:600;">Date</th>
+                <th style="padding:8px 8px; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); font-weight:600;">Libellé</th>
+                <th style="padding:8px 8px; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); font-weight:600; text-align:right;">Montant</th>
+                <th style="padding:8px 8px; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); font-weight:600;">Catégorie proposée <span style="font-weight:400; text-transform:none;">(cliquer pour changer)</span></th>
+                <th style="padding:8px 8px; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); font-weight:600;">Confiance</th>
+              </tr>
+            </thead>
+            <tbody id="preClassTableBody">
+              ${lignes}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-foot" style="flex-direction:column; gap:10px; align-items:stretch;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+          <button class="btn btn-ghost btn-sm" id="btnPreclassIgnorer">Ignorer et classer manuellement</button>
+          <div style="display:flex; gap:10px;">
+            <button class="btn btn-secondary btn-sm" id="btnPreclassSkipChecked">Ne pas pré-classer la sélection</button>
+            <button class="btn btn-primary" id="btnPreclassValider">Valider les catégories cochées →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  // État local : catégories modifiables par ligne
+  const categoriesModifiees = {};
+  preClassees.forEach((item, idx) => { categoriesModifiees[idx] = item.categorie; });
+
+  // Fermer
+  overlay.querySelector("#closePreClassBtn").addEventListener("click", () => overlay.remove());
+  overlay.addEventListener("click", (e) => { if(e.target === overlay) overlay.remove(); });
+
+  // Tout sélectionner / désélectionner
+  overlay.querySelector("#chkPreclassAll").addEventListener("change", (e) => {
+    overlay.querySelectorAll(".preclass-chk").forEach(chk => { chk.checked = e.target.checked; });
+  });
+
+  // Chaque pill catégorie → ouvre une mini-popup de choix de catégorie
+  overlay.querySelectorAll(".preclass-cat-pill").forEach(pill => {
+    pill.addEventListener("click", () => {
+      const idx = parseInt(pill.dataset.idx);
+      ouvrirChoixCategoriePour(idx, categoriesModifiees, pill, overlay);
+    });
+  });
+
+  // Ignorer tout → ferme sans rien appliquer
+  overlay.querySelector("#btnPreclassIgnorer").addEventListener("click", () => {
+    overlay.remove();
+    // Lance la popup de classification normale sur le mois actuellement affiché
+    render();
+    openClassificationModal();
+  });
+
+  // Décocher la sélection → retire les cochées de la liste
+  overlay.querySelector("#btnPreclassSkipChecked").addEventListener("click", () => {
+    overlay.querySelectorAll(".preclass-chk:checked").forEach(chk => {
+      chk.closest("tr").style.opacity = "0.35";
+      chk.checked = false;
+    });
+    overlay.querySelector("#chkPreclassAll").checked = false;
+  });
+
+  // Valider → applique les catégories cochées, chacune dans son propre mois
+  overlay.querySelector("#btnPreclassValider").addEventListener("click", () => {
+    const cochees = overlay.querySelectorAll(".preclass-chk:checked");
+    let nbValidees = 0;
+    cochees.forEach(chk => {
+      const idx = parseInt(chk.dataset.idx);
+      const item = preClassees[idx];
+      const cat = categoriesModifiees[idx];
+      classerOperation(item.moisKey, item.op.id, cat);
+      apprentissage(item.op.libelle, cat);
+      nbValidees++;
+    });
+    overlay.remove();
+    render();
+    showToast(`${nbValidees} opération${nbValidees>1?'s':''} pré-classée${nbValidees>1?'s':''}. Les opérations restantes vous attendent dans le classement.`);
+  });
+}
+
+// =========================================================
+// GESTION DES RÈGLES D'APPRENTISSAGE
+// =========================================================
+
+function ouvrirGestionApprentissages(){
+  const regles = STATE.regles || {};
+  const entries = Object.entries(regles).sort((a,b) => (b[1].score||0) - (a[1].score||0));
+
+  const overlay = document.createElement("div");
+  overlay.className = "modal-overlay open";
+  overlay.id = "apprentissagesOverlay";
+
+  const lignes = entries.length === 0
+    ? `<tr><td colspan="4" style="text-align:center; padding:30px; color:var(--ink-soft);">Aucune règle mémorisée pour l'instant.<br>Les règles se créent automatiquement quand vous classez des opérations.</td></tr>`
+    : entries.map(([cle, r]) => {
+        const confiance = r.score >= 5 ? "Haute" : r.score >= 2 ? "Moyenne" : "Faible";
+        const confianceColor = r.score >= 5 ? "var(--sapin)" : r.score >= 2 ? "var(--ambre)" : "var(--ink-soft)";
+        const section = categorieSection(r.categorie);
+        const sectionColor = { revenus:"var(--sapin)", fixes:"var(--prune)", variables:"var(--terracotta)", epargne:"var(--ambre)" }[section] || "var(--ink-soft)";
+        return `
+        <tr class="apprentissage-row" data-cle="${escapeAttr(cle)}">
+          <td style="padding:10px 14px; font-size:13px; font-weight:600;">${escapeHtml(cle)}</td>
+          <td style="padding:10px 8px;">
+            <span style="font-size:12px; padding:3px 9px; border-radius:99px; background:${sectionColor}22; color:${sectionColor}; font-weight:600;">
+              ${escapeHtml(r.categorie)}
+            </span>
+          </td>
+          <td style="padding:10px 8px; font-size:12px; font-weight:600; color:${confianceColor}; text-transform:uppercase; letter-spacing:.04em;">
+            ${confiance} (${r.score})
+          </td>
+          <td style="padding:10px 8px; text-align:right;">
+            <button class="btn btn-ghost btn-sm" style="color:var(--rouge); font-size:11.5px;" data-del-regle="${escapeAttr(cle)}">Supprimer</button>
+          </td>
+        </tr>`;
+      }).join("");
+
+  overlay.innerHTML = `
+    <div class="modal-card" style="max-width:760px; max-height:88vh;">
+      <div class="modal-head">
+        <div>
+          <div class="modal-progress">Règles mémorisées — ${entries.length} règle${entries.length>1?'s':''}</div>
+          <div class="modal-op-libelle display">Gestion des apprentissages</div>
+          <div class="modal-op-detail">
+            Ces règles sont mémorisées automatiquement à chaque classement et servent à pré-catégoriser les prochains imports.
+            Supprimez les règles incorrectes ou effacez tout pour repartir de zéro.
+          </div>
+        </div>
+        <button class="modal-close" id="closeApprentissagesBtn">✕</button>
+      </div>
+      <div class="modal-body" style="padding:0; overflow-y:auto; max-height:calc(88vh - 260px);">
+        ${entries.length > 0 ? `
+        <div style="padding:10px 14px; background:var(--cream-deep); border-bottom:1px solid var(--line); display:flex; align-items:center; gap:8px;">
+          <input type="text" id="filtreRegles" placeholder="Filtrer par libellé ou catégorie..." style="flex:1; border:1px solid var(--line); border-radius:7px; padding:7px 11px; font-size:13px; background:var(--card);">
+        </div>` : ""}
+        <table style="width:100%; border-collapse:collapse;" id="reglesTable">
+          <thead>
+            <tr style="background:var(--cream-deep); border-bottom:1px solid var(--line);">
+              <th style="padding:8px 14px; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); font-weight:600; text-align:left;">Libellé reconnu</th>
+              <th style="padding:8px 8px; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); font-weight:600; text-align:left;">Catégorie associée</th>
+              <th style="padding:8px 8px; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); font-weight:600;">Confiance</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="reglesBody">${lignes}</tbody>
+        </table>
+      </div>
+      <div class="modal-foot" style="justify-content:space-between;">
+        <button class="btn btn-ghost btn-sm" id="btnEffacerTousApprentissages" style="color:var(--rouge);">
+          🗑 Effacer tous les apprentissages
+        </button>
+        <button class="btn btn-secondary btn-sm" id="closeApprentissagesBtnFoot">Fermer</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  // Fermer
+  const fermer = () => overlay.remove();
+  overlay.querySelector("#closeApprentissagesBtn").addEventListener("click", fermer);
+  overlay.querySelector("#closeApprentissagesBtnFoot").addEventListener("click", fermer);
+  overlay.addEventListener("click", (e) => { if(e.target === overlay) fermer(); });
+
+  // Filtrage en temps réel
+  const filtreInput = overlay.querySelector("#filtreRegles");
+  if(filtreInput){
+    filtreInput.addEventListener("input", () => {
+      const q = filtreInput.value.toLowerCase();
+      overlay.querySelectorAll(".apprentissage-row").forEach(tr => {
+        const texte = tr.textContent.toLowerCase();
+        tr.style.display = texte.includes(q) ? "" : "none";
+      });
+    });
+  }
+
+  // Supprimer une règle
+  overlay.querySelectorAll("[data-del-regle]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const cle = btn.dataset.delRegle;
+      delete STATE.regles[cle];
+      saveState();
+      btn.closest("tr").remove();
+      // Mettre à jour le compteur
+      const restantes = Object.keys(STATE.regles).length;
+      overlay.querySelector(".modal-progress").textContent =
+        `Règles mémorisées — ${restantes} règle${restantes>1?'s':''}`;
+      showToast(`Règle "${cle}" supprimée.`);
+    });
+  });
+
+  // Effacer TOUT
+  overlay.querySelector("#btnEffacerTousApprentissages").addEventListener("click", () => {
+    if(!confirm(`Effacer les ${entries.length} règles d'apprentissage ? Cette action est irréversible.`)) return;
+    STATE.regles = {};
+    saveState();
+    overlay.remove();
+    showToast("Tous les apprentissages ont été effacés.");
+  });
+}
+function ouvrirChoixCategoriePour(idx, categoriesModifiees, pillElement, parentOverlay){
+  const existant = document.getElementById("miniCatPicker");
+  if(existant) existant.remove();
+
+  const picker = document.createElement("div");
+  picker.id = "miniCatPicker";
+  picker.style.cssText = `
+    position:fixed; inset:0; background:rgba(44,62,53,0.45);
+    display:flex; align-items:center; justify-content:center; z-index:200; padding:24px;
+  `;
+
+  const sections = ["revenus","fixes","variables","epargne"];
+  const sectionTitles = { revenus:"t-revenus", fixes:"t-fixes", variables:"t-variables", epargne:"t-epargne" };
+
+  const catBlocks = sections.map(secKey => {
+    const sec = CATEGORIES[secKey];
+    const stamps = sec.items.map(cat =>
+      `<button class="cat-stamp ${sectionTitles[secKey]}" data-cat="${escapeAttr(cat)}" style="font-size:12px; padding:7px 10px;">${escapeHtml(cat)}</button>`
+    ).join("");
+    return `<div class="cat-section-title ${sectionTitles[secKey]}">${sec.label}</div><div class="cat-grid">${stamps}</div>`;
+  }).join("");
+
+  picker.innerHTML = `
+    <div class="modal-card" style="max-width:580px; max-height:80vh;">
+      <div class="modal-head" style="padding:16px 22px;">
+        <div>
+          <div class="modal-progress">Corriger la catégorie</div>
+          <div class="modal-op-libelle display" style="font-size:17px;">Choisissez la bonne catégorie</div>
+        </div>
+        <button class="modal-close" id="closeMiniPicker">✕</button>
+      </div>
+      <div class="modal-body">${catBlocks}</div>
+    </div>
+  `;
+
+  document.body.appendChild(picker);
+  picker.querySelector("#closeMiniPicker").addEventListener("click", () => picker.remove());
+  picker.addEventListener("click", (e) => { if(e.target === picker) picker.remove(); });
+
+  picker.querySelectorAll(".cat-stamp").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const nouvelleCat = btn.dataset.cat;
+      categoriesModifiees[idx] = nouvelleCat;
+      // Mettre à jour le visuel de la pill dans le tableau parent
+      pillElement.textContent = nouvelleCat;
+      picker.remove();
+    });
+  });
+}
+
+// ===== charts.js =====
+// =========================================================
+// GRAPHIQUES
+// =========================================================
+
+let chartRepartitionInstance = null;
+let chartPrevReelInstance = null;
+let drillDownSection = null; // null = vue globale, sinon "fixes"|"variables"|"epargne"
+
+const SECTION_COLORS = {
+  fixes: "#8B5A6B",
+  variables: "#C97B4A",
+  epargne: "#C99A3A"
+};
+
+function renderCharts_draw(){
+  drawChartPrevReel();
+  drawChartRepartition();
+}
+
+function drawChartRepartition(){
+  const moisKey = STATE.moisActif;
+  const ctx1 = document.getElementById("chartRepartition");
+  if(!ctx1) return;
+  const wrapper = ctx1.parentElement;
+
+  // Nettoyage d'un éventuel message vide précédent
+  const oldEmpty = wrapper.querySelector(".chart-empty");
+  if(oldEmpty) oldEmpty.remove();
+  ctx1.style.display = "";
+
+  if(chartRepartitionInstance){ chartRepartitionInstance.destroy(); chartRepartitionInstance = null; }
+
+  // Gère le fil d'ariane (breadcrumb) au-dessus du graphique
+  let breadcrumb = wrapper.querySelector(".chart-breadcrumb");
+  if(breadcrumb) breadcrumb.remove();
+
+  if(drillDownSection){
+    const sec = CATEGORIES[drillDownSection];
+    breadcrumb = document.createElement("div");
+    breadcrumb.className = "chart-breadcrumb";
+    breadcrumb.innerHTML = `<span class="crumb-back" id="crumbBack">← Toutes les dépenses</span><span class="crumb-current">/ ${sec.label}</span>`;
+    wrapper.insertBefore(breadcrumb, ctx1);
+    breadcrumb.querySelector("#crumbBack").addEventListener("click", () => {
+      drillDownSection = null;
+      drawChartRepartition();
+    });
+
+    const reals = realParCategorie(moisKey);
+    const items = sec.items
+      .map(cat => ({ cat, val: reals[cat] || 0 }))
+      .filter(it => it.val > 0)
+      .sort((a,b) => b.val - a.val);
+
+    if(items.length === 0){
+      const p = document.createElement("p");
+      p.className = "chart-empty";
+      p.style.cssText = "color:var(--ink-soft); font-size:13px; text-align:center; padding:40px 0;";
+      p.textContent = "Aucune dépense classée dans cette section pour l'instant.";
+      ctx1.style.display = "none";
+      wrapper.appendChild(p);
+      return;
+    }
+
+    const baseColor = SECTION_COLORS[drillDownSection];
+    const shades = generateShades(baseColor, items.length);
+
+    chartRepartitionInstance = new Chart(ctx1, {
+      type: "pie",
+      data: {
+        labels: items.map(it => it.cat),
+        datasets: [{ data: items.map(it => it.val), backgroundColor: shades, borderWidth: 0, hoverOffset: 6 }]
+      },
+      options: {
+        plugins: {
+          legend: { position: "bottom", labels: { font: { family:"Inter", size: 11 }, padding: 10, boxWidth: 12 } },
+          tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}: ${fmtEUR(ctx.parsed)}` } }
+        }
+      }
+    });
+    return;
+  }
+
+  // Vue globale : Fixes / Variables / Épargne
+  const fixes = totalSection(moisKey, "fixes");
+  const variables = totalSection(moisKey, "variables");
+  const epargne = totalSection(moisKey, "epargne");
+
+  if(fixes + variables + epargne === 0){
+    ctx1.style.display = "none";
+    const p = document.createElement("p");
+    p.className = "chart-empty";
+    p.style.cssText = "color:var(--ink-soft); font-size:13px; text-align:center; padding:60px 0;";
+    p.textContent = "Classez des opérations pour voir la répartition.";
+    wrapper.appendChild(p);
+    return;
+  }
+
+  const sectionKeys = ["fixes","variables","epargne"];
+  const sectionLabels = ["Dépenses fixes","Dépenses variables","Épargne fixe"];
+  const sectionVals = [fixes, variables, epargne];
+
+  chartRepartitionInstance = new Chart(ctx1, {
+    type: "doughnut",
+    data: {
+      labels: sectionLabels,
+      datasets: [{
+        data: sectionVals,
+        backgroundColor: [SECTION_COLORS.fixes, SECTION_COLORS.variables, SECTION_COLORS.epargne],
+        borderWidth: 0,
+        hoverOffset: 6
+      }]
+    },
+    options: {
+      onClick: (evt, elements) => {
+        if(elements && elements.length > 0){
+          const idx = elements[0].index;
+          const key = sectionKeys[idx];
+          if(sectionVals[idx] > 0){
+            drillDownSection = key;
+            drawChartRepartition();
+          }
+        }
+      },
+      plugins: {
+        legend: { position: "bottom", labels: { font: { family: "Inter", size: 12 }, padding: 14 } },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => ` ${ctx.label}: ${fmtEUR(ctx.parsed)}`
+          }
+        }
+      },
+      cutout: "62%"
+    }
+  });
+
+  // Petite indication visuelle que le graphique est cliquable
+  ctx1.style.cursor = "pointer";
+}
+
+function generateShades(hex, count){
+  // Génère `count` teintes dérivées de la couleur de base (plus clair à plus foncé)
+  const {r,g,b} = hexToRgb(hex);
+  const shades = [];
+  for(let i=0; i<count; i++){
+    const factor = count <= 1 ? 1 : 0.55 + (0.85 * i / (count-1)); // de clair (0.55) à foncé proche de 1.4
+    const adj = 1.4 - (factor - 0.55); // inverse: premier = plus saturé, dernier = plus clair
+    shades.push(adjustShade(r,g,b, 1.25 - (i/(count*1.3))));
+  }
+  return shades;
+}
+function hexToRgb(hex){
+  const v = hex.replace("#","");
+  return { r: parseInt(v.slice(0,2),16), g: parseInt(v.slice(2,4),16), b: parseInt(v.slice(4,6),16) };
+}
+function adjustShade(r,g,b,factor){
+  const f = (c) => Math.max(0, Math.min(255, Math.round(c*factor)));
+  return `rgb(${f(r)},${f(g)},${f(b)})`;
+}
+
+function drawChartPrevReel(){
+  const moisKey = STATE.moisActif;
+  const ctx2 = document.getElementById("chartPrevReel");
+  if(!ctx2) return;
+
+  if(chartPrevReelInstance) chartPrevReelInstance.destroy();
+
+  const labels = ["Revenus","Dép. fixes","Dép. variables","Épargne"];
+  const prevVals = [
+    totalSectionPrevisionnel(moisKey,"revenus"),
+    totalSectionPrevisionnel(moisKey,"fixes"),
+    totalSectionPrevisionnel(moisKey,"variables"),
+    totalSectionPrevisionnel(moisKey,"epargne")
+  ];
+  const realVals = [
+    totalSection(moisKey,"revenus"),
+    totalSection(moisKey,"fixes"),
+    totalSection(moisKey,"variables"),
+    totalSection(moisKey,"epargne")
+  ];
+
+  chartPrevReelInstance = new Chart(ctx2, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [
+        { label: "Prévisionnel", data: prevVals, backgroundColor: "#E3DDCD", borderRadius: 6, maxBarThickness: 34 },
+        { label: "Réel", data: realVals, backgroundColor: "#2C3E35", borderRadius: 6, maxBarThickness: 34 }
+      ]
+    },
+    options: {
+      plugins: {
+        legend: { position: "bottom", labels: { font: { family: "Inter", size: 12 }, padding: 14 } },
+        tooltip: { callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${fmtEUR(ctx.parsed.y)}` } }
+      },
+      scales: {
+        y: { ticks: { callback: (v) => fmtEUR(v), font: { family:"Inter", size: 11 } }, grid: { color: "#EFEAE0" } },
+        x: { ticks: { font: { family:"Inter", size: 11.5 } }, grid: { display:false } }
+      }
+    }
+  });
+}
+
+// ===== synthese.js =====
+// =========================================================
+// SYNTHÈSE ANNUELLE
+// =========================================================
+
+let syntheseChartInstance = null;
+let syntheseSectionActive = "variables"; // section affichée dans le graphique d'évolution
+
+function anneesDisponibles(){
+  const annees = new Set(STATE.moisListe.map(m => m.split("-")[0]));
+  return Array.from(annees).sort();
+}
+
+let syntheseAnneeActive = null;
+
+function moisRevolusCompletsPourAnnee(annee){
+  return moisRevolusComplets().filter(m => m.startsWith(annee + "-")).sort();
+}
+
+function renderSynthese(){
+  const annees = anneesDisponibles();
+  if(!syntheseAnneeActive || !annees.includes(syntheseAnneeActive)){
+    syntheseAnneeActive = annees[annees.length-1];
+  }
+  const moisRevolus = moisRevolusCompletsPourAnnee(syntheseAnneeActive);
+
+  const anneeSelector = annees.length > 1 ? `
+    <select id="syntheseAnneeSelect" style="margin-bottom:18px;">
+      ${annees.map(a => `<option value="${a}" ${a===syntheseAnneeActive?'selected':''}>${a}</option>`).join("")}
+    </select>
+  ` : "";
+
+  if(moisRevolus.length === 0){
+    return `
+    <div class="ops-card" style="margin-top:24px;">
+      ${anneeSelector}
+      <div class="empty-state">
+        <div class="display">Pas encore de mois complet pour ${syntheseAnneeActive}</div>
+        <p>La synthèse annuelle se construit à partir des mois révolus dont toutes les opérations ont été classées. Terminez le classement d'un mois et passez au mois suivant pour le voir apparaître ici.</p>
+      </div>
+    </div>`;
+  }
+
+  const allSectionKeys = ["fixes","variables","epargne"];
+
+  // Tableau récapitulatif : une ligne par catégorie, une colonne par mois révolu + moyenne
+  const tableSections = allSectionKeys.map(secKey => renderSyntheseSectionTable(secKey, moisRevolus)).join("");
+
+  return `
+  <div style="margin-top:8px;">
+    ${anneeSelector}
+    <div class="ops-card" style="margin-bottom:22px;">
+      <div class="ops-head">
+        <h3 class="ops-title display">Évolution mensuelle — ${syntheseAnneeActive}</h3>
+        <div class="ops-filters">
+          ${allSectionKeys.map(k => `<span class="chip ${syntheseSectionActive===k?'active':''}" data-synthese-section="${k}">${CATEGORIES[k].label}</span>`).join("")}
+        </div>
+      </div>
+      <div style="padding:20px 26px;">
+        <canvas id="chartSynthese" height="90"></canvas>
+      </div>
+    </div>
+
+    ${tableSections}
+
+    <p style="font-size:12px; color:var(--ink-soft); margin-top:6px;">
+      Seuls les mois révolus et entièrement classés sont pris en compte (${moisRevolus.map(moisLabel).join(", ")}).
+      Le mois en cours n'apparaît pas tant qu'il n'est pas terminé et intégralement catégorisé.
+    </p>
+  </div>`;
+}
+
+function renderSyntheseSectionTable(sectionKey, moisRevolus){
+  const section = CATEGORIES[sectionKey];
+  const reals = moisRevolus.map(m => realParCategorie(m));
+
+  const rows = section.items.map(cat => {
+    const valeurs = reals.map(r => r[cat] || 0);
+    const moyenne = valeurs.reduce((s,v) => s+v, 0) / valeurs.length;
+    const totalCat = valeurs.reduce((s,v) => s+v, 0);
+    if(totalCat === 0) return null; // n'affiche pas les catégories jamais utilisées
+    const cells = valeurs.map(v => `<td style="text-align:right;">${fmtEUR(v)}</td>`).join("");
+    return `<tr><td>${cat}</td>${cells}<td style="text-align:right; font-weight:600;">${fmtEUR(moyenne)}</td></tr>`;
+  }).filter(Boolean).join("");
+
+  if(!rows){
+    return "";
+  }
+
+  const totalRow = (() => {
+    const totauxParMois = moisRevolus.map((m,i) => totalSection(m, sectionKey));
+    const moyenneTotal = totauxParMois.reduce((s,v)=>s+v,0) / totauxParMois.length;
+    const cells = totauxParMois.map(v => `<td style="text-align:right;">${fmtEUR(v)}</td>`).join("");
+    return `<tr class="synthese-total-row"><td>Total ${section.label}</td>${cells}<td style="text-align:right;">${fmtEUR(moyenneTotal)}</td></tr>`;
+  })();
+
+  const headerCells = moisRevolus.map(m => `<th style="text-align:right;">${moisLabel(m).split(" ")[0].slice(0,3)}</th>`).join("");
+
+  return `
+  <div class="ops-card" style="margin-bottom:22px;">
+    <div class="ops-head"><h3 class="ops-title display">${section.label}</h3></div>
+    <div class="ops-table-scroll">
+      <table class="ops-table synthese-table">
+        <thead><tr><th>Catégorie</th>${headerCells}<th style="text-align:right;">Moyenne</th></tr></thead>
+        <tbody>${rows}${totalRow}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+function attachSyntheseEvents(){
+  const anneeSelect = document.getElementById("syntheseAnneeSelect");
+  if(anneeSelect){
+    anneeSelect.addEventListener("change", (e) => {
+      syntheseAnneeActive = e.target.value;
+      render();
+    });
+  }
+  document.querySelectorAll("[data-synthese-section]").forEach(chip => {
+    chip.addEventListener("click", (e) => {
+      syntheseSectionActive = e.currentTarget.dataset.syntheseSection;
+      render();
+    });
+  });
+}
+
+function drawSyntheseChart(){
+  const canvas = document.getElementById("chartSynthese");
+  if(!canvas) return;
+  if(syntheseChartInstance) syntheseChartInstance.destroy();
+
+  const moisRevolus = moisRevolusCompletsPourAnnee(syntheseAnneeActive);
+  if(moisRevolus.length === 0) return;
+
+  const sec = CATEGORIES[syntheseSectionActive];
+  const labels = moisRevolus.map(m => moisLabel(m));
+  const totaux = moisRevolus.map(m => totalSection(m, syntheseSectionActive));
+  const moyenne = totaux.reduce((s,v)=>s+v,0) / totaux.length;
+
+  syntheseChartInstance = new Chart(canvas, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: sec.label,
+          data: totaux,
+          backgroundColor: SECTION_COLORS[syntheseSectionActive] || "#C97B4A",
+          borderRadius: 6,
+          maxBarThickness: 46
+        },
+        {
+          label: "Moyenne mensuelle",
+          data: labels.map(() => moyenne),
+          type: "line",
+          borderColor: "#2C3E35",
+          borderDash: [6,4],
+          borderWidth: 2,
+          pointRadius: 0,
+          fill: false
+        }
+      ]
+    },
+    options: {
+      plugins: {
+        legend: { position: "bottom", labels: { font: { family:"Inter", size: 12 }, padding: 14 } },
+        tooltip: { callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${fmtEUR(ctx.parsed.y)}` } }
+      },
+      scales: {
+        y: { ticks: { callback: (v) => fmtEUR(v), font: { family:"Inter", size: 11 } }, grid: { color:"#EFEAE0" } },
+        x: { ticks: { font: { family:"Inter", size: 11.5 } }, grid: { display:false } }
+      }
+    }
+  });
+}
+
+// ===== main.js =====
+// =========================================================
+// INITIALISATION
+// =========================================================
+
+document.addEventListener("DOMContentLoaded", async () => {
+  loadState();
+  render();
+  // Lance la synchronisation initiale (pull depuis le Sheet si configuré)
+  await initSync();
+});
+
+</script>
+</body>
+</html>
