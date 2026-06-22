@@ -734,10 +734,34 @@ tr.row-selected td{background:var(--terracotta-soft) !important;}
 }
 .synthese-table th{white-space:nowrap;}
 
-td.libelle-cell[title]{
+/* ---------- Tooltip custom (une seule ligne) ---------- */
+.has-tooltip{
+  position:relative;
   cursor:help;
   text-decoration:underline dotted var(--ink-soft);
   text-underline-offset:3px;
+}
+.has-tooltip::after{
+  content: attr(data-tooltip);
+  position:absolute;
+  bottom:calc(100% + 6px);
+  left:0;
+  white-space:nowrap;
+  background:rgba(30,30,30,0.92);
+  color:#fff;
+  font-size:12px;
+  font-weight:400;
+  font-family:'Inter',sans-serif;
+  padding:5px 10px;
+  border-radius:6px;
+  pointer-events:none;
+  opacity:0;
+  transition:opacity .15s;
+  z-index:200;
+  max-width:none;
+}
+.has-tooltip:hover::after{
+  opacity:1;
 }
 
 /* ---------- Notes mensuelles ---------- */
@@ -2025,7 +2049,9 @@ function renderOpsTable(){
     if(op.libelleOperation) tooltipParts.push(op.libelleOperation);
     if(op.sousCategorie) tooltipParts.push("Sous-cat. : " + op.sousCategorie);
     if(op.detail) tooltipParts.push(op.detail);
-    const tooltip = tooltipParts.length ? ` title="${escapeAttr(tooltipParts.join(' — '))}"` : "";
+    const libelleHtml = tooltipParts.length
+      ? `<span class="has-tooltip" data-tooltip="${escapeAttr(tooltipParts.join(' | '))}">${escapeHtml(op.libelle)}</span>`
+      : escapeHtml(op.libelle);
 
     const montantClass = op.montant >= 0 ? "credit" : "debit";
     const catCell = renderCategorieCell(op);
@@ -2034,7 +2060,7 @@ function renderOpsTable(){
     <tr data-op-row="${op.id}" class="${isSelected?'row-selected':''}">
       <td class="col-check"><input type="checkbox" class="op-checkbox" data-op-id="${op.id}" ${isSelected?'checked':''}></td>
       <td>${fmtDateFr(op.date)}</td>
-      <td class="libelle-cell"${tooltip}>${escapeHtml(op.libelle)}</td>
+      <td class="libelle-cell">${libelleHtml}</td>
       <td>${op.carte ? escapeHtml(op.carte) : '<span class="muted">—</span>'}</td>
       <td>${op.sousCategorie ? escapeHtml(op.sousCategorie) : '<span class="muted">—</span>'}</td>
       <td class="amount-cell ${montantClass}">${op.montant>=0?'+':''}${fmtEUR(op.montant,true)}</td>
@@ -3043,12 +3069,21 @@ function ouvrirValidationPreclassificationMultiMois(items){
       const confiance = item.score >= 5 ? "Haute" : item.score >= 2 ? "Moyenne" : "Faible";
       const confianceColor = item.score >= 5 ? "var(--sapin)" : item.score >= 2 ? "var(--ambre)" : "var(--ink-soft)";
       const colMois = multiMois ? `<td style="padding:10px 8px; font-size:12px; color:var(--ink-soft); white-space:nowrap;">${moisLabel(item.moisKey)}</td>` : "";
+
+      const tooltipParts = [];
+      if(item.op.libelleOperation) tooltipParts.push(item.op.libelleOperation);
+      if(item.op.sousCategorie) tooltipParts.push("Sous-cat. : " + item.op.sousCategorie);
+      if(item.op.detail) tooltipParts.push(item.op.detail);
+      const libelleHtml = tooltipParts.length
+        ? `<span class="has-tooltip" data-tooltip="${escapeAttr(tooltipParts.join(' | '))}">${escapeHtml(item.op.libelle)}</span>`
+        : escapeHtml(item.op.libelle);
+
       return `
       <tr data-preclass-idx="${origIdx}">
         <td style="padding:10px 14px;"><input type="checkbox" class="op-checkbox preclass-chk" data-idx="${origIdx}" checked></td>
         ${colMois}
         <td style="padding:10px 8px; font-size:12.5px; color:var(--ink-soft); white-space:nowrap;">${fmtDateFr(item.op.date)}</td>
-        <td style="padding:10px 8px; font-size:13px; font-weight:600;">${escapeHtml(item.op.libelle)}</td>
+        <td style="padding:10px 8px; font-size:13px; font-weight:600;">${libelleHtml}</td>
         <td style="padding:10px 8px; text-align:right; font-size:13px;" class="amount-cell ${montantClass}">
           ${item.op.montant >= 0 ? "+" : ""}${fmtEUR(item.op.montant, true)}
         </td>
