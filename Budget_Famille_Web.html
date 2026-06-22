@@ -727,6 +727,43 @@ tr.row-selected td{background:var(--terracotta-soft) !important;}
 }
 .synthese-table th{white-space:nowrap;}
 
+/* ---------- Notes mensuelles ---------- */
+.notes-card{
+  background:var(--card);
+  border-radius:var(--radius);
+  padding:18px 26px 20px;
+  margin-bottom:22px;
+  border:1.5px solid var(--ambre-soft);
+}
+.notes-label{
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  font-weight:700;
+  color:var(--ambre);
+  margin-bottom:10px;
+}
+.notes-textarea{
+  width:100%;
+  border:1px solid var(--line);
+  border-radius:var(--radius-sm);
+  padding:11px 14px;
+  font-family:'Inter',sans-serif;
+  font-size:13.5px;
+  line-height:1.6;
+  color:var(--ink);
+  background:var(--cream);
+  resize:vertical;
+  box-sizing:border-box;
+  transition:border-color .15s;
+}
+.notes-textarea:focus{
+  outline:none;
+  border-color:var(--ambre);
+  background:var(--card);
+}
+.notes-textarea::placeholder{color:var(--ink-soft); opacity:.7;}
+
 /* ---------- Sync indicator ---------- */
 .sync-indicator{
   display:inline-flex;
@@ -1271,6 +1308,7 @@ function defaultState(){
     soldeCompte: {
       [moisKey]: { debut: null }
     },
+    notes: {},   // moisKey -> texte libre
     regles: {}
   };
 }
@@ -1671,6 +1709,7 @@ function render(){
     ${renderTopbar()}
     <div class="shell">
       ${renderHero()}
+      ${renderNotesMois()}
       ${renderSectionsGrid()}
       ${renderCharts()}
       ${renderOpsTable()}
@@ -1879,6 +1918,21 @@ function uniqueColumnValues(ops, col){
     set.add(v);
   });
   return Array.from(set).sort((a,b) => String(a).localeCompare(String(b), 'fr'));
+}
+
+function renderNotesMois(){
+  const moisKey = STATE.moisActif;
+  const note = (STATE.notes && STATE.notes[moisKey]) || "";
+  return `
+  <div class="notes-card">
+    <div class="notes-label">📝 Notes — ${moisLabel(moisKey)}</div>
+    <textarea
+      id="notesMoisTextarea"
+      class="notes-textarea"
+      placeholder="Annotez ce qui vous semble important pour ce mois : événements exceptionnels, dépenses inhabituelles, rappels…"
+      rows="3"
+    >${escapeHtml(note)}</textarea>
+  </div>`;
 }
 
 function renderOpsTable(){
@@ -2183,6 +2237,20 @@ function attachDashboardEvents(){
       setSoldeDebut(STATE.moisActif, val);
       render();
       showToast("Solde de début de mois mis à jour.");
+    });
+  }
+
+  // ---- Notes mensuelles (sauvegarde debouncée à la frappe) ----
+  const notesTextarea = document.getElementById("notesMoisTextarea");
+  if(notesTextarea){
+    let notesDebounce;
+    notesTextarea.addEventListener("input", (e) => {
+      clearTimeout(notesDebounce);
+      notesDebounce = setTimeout(() => {
+        if(!STATE.notes) STATE.notes = {};
+        STATE.notes[STATE.moisActif] = e.target.value;
+        saveState(); // déclenche aussi le push vers Sheets
+      }, 800);
     });
   }
 
@@ -2584,6 +2652,7 @@ function importerDonneesJSON(file){
       STATE = data;
       if(!STATE.soldeCompte) STATE.soldeCompte = {};
       if(!STATE.regles) STATE.regles = {};
+      if(!STATE.notes) STATE.notes = {};
       // Compatibilité anciennes sauvegardes : nettoyer finManuel
       Object.keys(STATE.soldeCompte).forEach(k => {
         if(STATE.soldeCompte[k].finManuel !== undefined) delete STATE.soldeCompte[k].finManuel;
