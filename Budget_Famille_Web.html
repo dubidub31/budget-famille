@@ -727,6 +727,12 @@ tr.row-selected td{background:var(--terracotta-soft) !important;}
 }
 .synthese-table th{white-space:nowrap;}
 
+td.libelle-cell[title]{
+  cursor:help;
+  text-decoration:underline dotted var(--ink-soft);
+  text-underline-offset:3px;
+}
+
 /* ---------- Notes mensuelles ---------- */
 .notes-card{
   background:var(--card);
@@ -1459,6 +1465,7 @@ function importerOperations(moisKey, nouvellesOps){
       id: "op_"+moisKey+"_"+String(compteur).padStart(3,"0"),
       date: op.date,
       libelle: op.libelle,
+      libelleOperation: op.libelleOperation || "",
       detail: op.detail || "",
       sousCategorie: op.sousCategorie || "",
       carte: op.carte || null,
@@ -1739,6 +1746,7 @@ function renderTopbar(){
       <button class="btn ${currentView==='synthese'?'btn-primary':'btn-secondary'} btn-sm" id="btnToggleSynthese">${currentView==='synthese' ? '← Retour au mois' : 'Synthèse annuelle'}</button>
       ${currentView === "dashboard" ? `
         <button class="btn btn-secondary btn-sm" id="btnImportCSV">Importer un relevé CSV</button>
+        <button class="btn btn-ghost btn-sm" id="btnPreclassManuel" title="Passer les opérations non classées dans la moulinette des apprentissages">🔍 Reconnaissance auto</button>
         <button class="btn btn-primary btn-sm" id="btnClasser">Classer les opérations</button>
         <div class="dropdown-wrap" id="moisOptionsWrap">
           <button class="btn btn-ghost btn-sm" id="btnMoisOptions" style="color:var(--rouge);">🗑 Options du mois ▾</button>
@@ -1981,6 +1989,12 @@ function renderOpsTable(){
   }
 
   const rows = ops.map(op => {
+    const tooltipParts = [];
+    if(op.libelleOperation) tooltipParts.push(op.libelleOperation);
+    if(op.sousCategorie) tooltipParts.push("Sous-cat. : " + op.sousCategorie);
+    if(op.detail) tooltipParts.push(op.detail);
+    const tooltip = tooltipParts.length ? ` title="${escapeAttr(tooltipParts.join(' — '))}"` : "";
+
     const montantClass = op.montant >= 0 ? "credit" : "debit";
     const catCell = renderCategorieCell(op);
     const isSelected = selectedOpIds.has(op.id);
@@ -1988,7 +2002,7 @@ function renderOpsTable(){
     <tr data-op-row="${op.id}" class="${isSelected?'row-selected':''}">
       <td class="col-check"><input type="checkbox" class="op-checkbox" data-op-id="${op.id}" ${isSelected?'checked':''}></td>
       <td>${fmtDateFr(op.date)}</td>
-      <td>${escapeHtml(op.libelle)}</td>
+      <td class="libelle-cell"${tooltip}>${escapeHtml(op.libelle)}</td>
       <td>${op.carte ? escapeHtml(op.carte) : '<span class="muted">—</span>'}</td>
       <td>${op.sousCategorie ? escapeHtml(op.sousCategorie) : '<span class="muted">—</span>'}</td>
       <td class="amount-cell ${montantClass}">${op.montant>=0?'+':''}${fmtEUR(op.montant,true)}</td>
@@ -2210,6 +2224,29 @@ function attachTopbarEvents(){
     if(csvFileInput) csvFileInput.addEventListener("change", handleCSVFile);
     const btnClasser = document.getElementById("btnClasser");
     if(btnClasser) btnClasser.addEventListener("click", () => openClassificationModal());
+
+    const btnPreclassManuel = document.getElementById("btnPreclassManuel");
+    if(btnPreclassManuel){
+      btnPreclassManuel.addEventListener("click", () => {
+        const moisKey = STATE.moisActif;
+        const ops = (STATE.operations[moisKey]||[]).filter(o => !o.categorie);
+        if(ops.length === 0){
+          showToast("Toutes les opérations de ce mois sont déjà classées.");
+          return;
+        }
+        if(!STATE.regles || Object.keys(STATE.regles).length === 0){
+          showToast("Aucune règle d'apprentissage mémorisée. Classez d'abord quelques opérations pour entraîner la reconnaissance.");
+          return;
+        }
+        const { preClassees } = preClasserOperations(ops);
+        if(preClassees.length === 0){
+          showToast("Aucune opération reconnue parmi les règles mémorisées.");
+          return;
+        }
+        const items = preClassees.map(item => ({ ...item, moisKey }));
+        ouvrirValidationPreclassificationMultiMois(items);
+      });
+    }
   }
 }
 
@@ -2573,15 +2610,16 @@ function parseCSVBancaire(text){
 
   const iDate = idx("Date de comptabilisation");
   const iLibelle = idx("Libelle simplifie");
+  const iLibelleOp = idx("Libelle operation");
   const iDetail = idx("Informations complementaires");
   const iSousCat = idx("Sous categorie");
   const iDebit = idx("Debit");
   const iCredit = idx("Credit");
 
-  // Si les colonnes attendues ne sont pas trouvées, on retombe sur des positions par défaut
   const useDefaults = iDate === -1 || iDebit === -1;
   const colDate = useDefaults ? 0 : iDate;
   const colLibelle = useDefaults ? 1 : iLibelle;
+  const colLibelleOp = useDefaults ? 2 : iLibelleOp;
   const colDetail = useDefaults ? 4 : iDetail;
   const colSousCat = useDefaults ? 7 : iSousCat;
   const colDebit = useDefaults ? 8 : iDebit;
@@ -2598,6 +2636,7 @@ function parseCSVBancaire(text){
     const isoDate = `${m[3]}-${m[2]}-${m[1]}`;
 
     const libelle = (cols[colLibelle]||"").trim();
+    const libelleOperation = (cols[colLibelleOp]||"").trim();
     const detail = (cols[colDetail]||"").trim();
     const sousCategorie = (cols[colSousCat]||"").trim();
     const debitStr = (cols[colDebit]||"").trim();
@@ -2615,7 +2654,7 @@ function parseCSVBancaire(text){
 
     const carte = extractCarteFromDetail(detail);
 
-    ops.push({ date: isoDate, libelle, detail, sousCategorie, carte, montant });
+    ops.push({ date: isoDate, libelle, libelleOperation, detail, sousCategorie, carte, montant });
   }
   return ops;
 }
@@ -2937,62 +2976,96 @@ function ouvrirValidationPreclassification(moisKey, preClassees){
 // Chaque item doit porter sa propre propriété moisKey.
 function ouvrirValidationPreclassificationMultiMois(items){
   if(!items || items.length === 0) return;
-  const preClassees = items;
   const multiMois = new Set(items.map(i => i.moisKey)).size > 1;
+
+  let sortCol = "date";
+  let sortDir = "asc";
+
+  function getSorted(){
+    return [...items].sort((a, b) => {
+      let va, vb;
+      if(sortCol === "date")       { va = a.op.date; vb = b.op.date; }
+      else if(sortCol === "libelle")  { va = (a.op.libelle||"").toLowerCase(); vb = (b.op.libelle||"").toLowerCase(); }
+      else if(sortCol === "confiance"){ va = a.score||0; vb = b.score||0; }
+      const cmp = va < vb ? -1 : va > vb ? 1 : 0;
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+  }
+
+  function buildSortBtns(){
+    return [["date","Date"],["libelle","Libellé"],["confiance","Confiance"]].map(([key,label]) => {
+      const active = sortCol === key;
+      const arrow = active ? (sortDir === "asc" ? " ▲" : " ▼") : "";
+      return `<button class="preclass-sort-btn" data-sort="${key}"
+        style="background:${active?"var(--terracotta-soft)":"none"}; border:none; cursor:pointer;
+        font-size:11px; font-weight:${active?700:600}; color:${active?"var(--terracotta)":"var(--ink-soft)"};
+        text-transform:uppercase; letter-spacing:.04em; padding:4px 8px; border-radius:5px;">
+        ${label}${arrow}</button>`;
+    }).join("");
+  }
+
+  function buildLignes(){
+    return getSorted().map(item => {
+      const origIdx = items.indexOf(item);
+      const montantClass = item.op.montant >= 0 ? "credit" : "debit";
+      const confiance = item.score >= 5 ? "Haute" : item.score >= 2 ? "Moyenne" : "Faible";
+      const confianceColor = item.score >= 5 ? "var(--sapin)" : item.score >= 2 ? "var(--ambre)" : "var(--ink-soft)";
+      const colMois = multiMois ? `<td style="padding:10px 8px; font-size:12px; color:var(--ink-soft); white-space:nowrap;">${moisLabel(item.moisKey)}</td>` : "";
+      return `
+      <tr data-preclass-idx="${origIdx}">
+        <td style="padding:10px 14px;"><input type="checkbox" class="op-checkbox preclass-chk" data-idx="${origIdx}" checked></td>
+        ${colMois}
+        <td style="padding:10px 8px; font-size:12.5px; color:var(--ink-soft); white-space:nowrap;">${fmtDateFr(item.op.date)}</td>
+        <td style="padding:10px 8px; font-size:13px; font-weight:600;">${escapeHtml(item.op.libelle)}</td>
+        <td style="padding:10px 8px; text-align:right; font-size:13px;" class="amount-cell ${montantClass}">
+          ${item.op.montant >= 0 ? "+" : ""}${fmtEUR(item.op.montant, true)}
+        </td>
+        <td style="padding:10px 8px;">
+          <span class="cat-pill assigned preclass-cat-pill" data-idx="${origIdx}" style="cursor:pointer;" title="Cliquer pour changer">
+            ${escapeHtml(item.categorie)}
+          </span>
+        </td>
+        <td style="padding:10px 8px; font-size:11px; color:${confianceColor}; font-weight:600; text-transform:uppercase; letter-spacing:.04em;">
+          ${confiance}
+        </td>
+      </tr>`;
+    }).join("");
+  }
 
   const overlay = document.createElement("div");
   overlay.className = "modal-overlay open";
   overlay.id = "preClassOverlay";
 
-  const lignes = preClassees.map((item, idx) => {
-    const montantClass = item.op.montant >= 0 ? "credit" : "debit";
-    const confiance = item.score >= 5 ? "haute" : item.score >= 2 ? "moyenne" : "faible";
-    const confianceColor = item.score >= 5 ? "var(--sapin)" : item.score >= 2 ? "var(--ambre)" : "var(--ink-soft)";
-    const colMois = multiMois ? `<td style="padding:10px 8px; font-size:12px; color:var(--ink-soft); white-space:nowrap;">${moisLabel(item.moisKey)}</td>` : "";
-    return `
-    <tr data-preclass-idx="${idx}">
-      <td style="padding:10px 14px;">
-        <input type="checkbox" class="op-checkbox preclass-chk" data-idx="${idx}" checked>
-      </td>
-      ${colMois}
-      <td style="padding:10px 8px; font-size:12.5px; color:var(--ink-soft);">${fmtDateFr(item.op.date)}</td>
-      <td style="padding:10px 8px; font-size:13px; font-weight:600;">${escapeHtml(item.op.libelle)}</td>
-      <td style="padding:10px 8px; text-align:right; font-size:13px;" class="amount-cell ${montantClass}">
-        ${item.op.montant >= 0 ? '+' : ''}${fmtEUR(item.op.montant, true)}
-      </td>
-      <td style="padding:10px 8px;">
-        <span class="cat-pill assigned preclass-cat-pill" data-idx="${idx}" style="cursor:pointer;" title="Cliquer pour changer">
-          ${escapeHtml(item.categorie)}
-        </span>
-      </td>
-      <td style="padding:10px 8px; font-size:11px; color:${confianceColor}; font-weight:600; text-transform:uppercase; letter-spacing:.04em;">
-        ${confiance}
-      </td>
-    </tr>`;
-  }).join("");
+  const categoriesModifiees = {};
+  items.forEach((item, idx) => { categoriesModifiees[idx] = item.categorie; });
 
-  overlay.innerHTML = `
-    <div class="modal-card" style="max-width:820px; max-height:90vh;">
+  function buildHTML(){
+    return `
+    <div class="modal-card" style="max-width:860px; max-height:90vh;">
       <div class="modal-head">
         <div>
           <div class="modal-progress">Apprentissage automatique</div>
-          <div class="modal-op-libelle display">${preClassees.length} opération${preClassees.length>1?'s':''} reconnue${preClassees.length>1?'s':''}</div>
+          <div class="modal-op-libelle display">${items.length} opération${items.length>1?"s":""} reconnue${items.length>1?"s":""}</div>
           <div class="modal-op-detail">Ces opérations correspondent à des libellés déjà classés. Vérifiez et confirmez (ou corrigez) les catégories proposées.</div>
         </div>
         <button class="modal-close" id="closePreClassBtn" aria-label="Fermer">✕</button>
       </div>
       <div class="modal-body" style="padding:0;">
-        <div style="padding:12px 22px 6px; background:var(--ambre-soft); font-size:12.5px; color:var(--ink); border-bottom:1px solid var(--line);">
-          <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+        <div style="padding:10px 22px; background:var(--ambre-soft); border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+          <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:12.5px;">
             <input type="checkbox" id="chkPreclassAll" checked style="accent-color:var(--terracotta);">
             <span>Tout sélectionner / désélectionner</span>
           </label>
+          <div style="display:flex; align-items:center; gap:4px;">
+            <span style="font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); font-weight:600; margin-right:4px;">Trier par</span>
+            <span id="sortBtnsZone">${buildSortBtns()}</span>
+          </div>
         </div>
-        <div style="overflow-y:auto; max-height:calc(90vh - 280px);">
+        <div style="overflow-y:auto; max-height:calc(90vh - 300px);">
           <table style="width:100%; border-collapse:collapse;">
             <thead>
               <tr style="background:var(--cream-deep);">
-                <th style="padding:8px 14px; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); font-weight:600; width:36px;"></th>
+                <th style="padding:8px 14px; width:36px;"></th>
                 ${multiMois ? `<th style="padding:8px 8px; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); font-weight:600;">Mois</th>` : ""}
                 <th style="padding:8px 8px; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); font-weight:600;">Date</th>
                 <th style="padding:8px 8px; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); font-weight:600;">Libellé</th>
@@ -3001,80 +3074,100 @@ function ouvrirValidationPreclassificationMultiMois(items){
                 <th style="padding:8px 8px; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); font-weight:600;">Confiance</th>
               </tr>
             </thead>
-            <tbody id="preClassTableBody">
-              ${lignes}
-            </tbody>
+            <tbody id="preClassTableBody">${buildLignes()}</tbody>
           </table>
         </div>
       </div>
-      <div class="modal-foot" style="flex-direction:column; gap:10px; align-items:stretch;">
-        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
-          <button class="btn btn-ghost btn-sm" id="btnPreclassIgnorer">Ignorer et classer manuellement</button>
-          <div style="display:flex; gap:10px;">
-            <button class="btn btn-secondary btn-sm" id="btnPreclassSkipChecked">Ne pas pré-classer la sélection</button>
-            <button class="btn btn-primary" id="btnPreclassValider">Valider les catégories cochées →</button>
-          </div>
+      <div class="modal-foot" style="justify-content:space-between;">
+        <button class="btn btn-ghost btn-sm" id="btnPreclassIgnorer">Ignorer et classer manuellement</button>
+        <div style="display:flex; gap:10px;">
+          <button class="btn btn-secondary btn-sm" id="btnPreclassSkipChecked">Ne pas pré-classer la sélection</button>
+          <button class="btn btn-primary" id="btnPreclassValider">Valider les catégories cochées →</button>
         </div>
       </div>
-    </div>
-  `;
+    </div>`;
+  }
 
+  overlay.innerHTML = buildHTML();
   document.body.appendChild(overlay);
 
-  // État local : catégories modifiables par ligne
-  const categoriesModifiees = {};
-  preClassees.forEach((item, idx) => { categoriesModifiees[idx] = item.categorie; });
+  function bindAll(){
+    overlay.querySelector("#closePreClassBtn").addEventListener("click", () => overlay.remove());
+    overlay.addEventListener("click", (e) => { if(e.target === overlay) overlay.remove(); });
 
-  // Fermer
-  overlay.querySelector("#closePreClassBtn").addEventListener("click", () => overlay.remove());
-  overlay.addEventListener("click", (e) => { if(e.target === overlay) overlay.remove(); });
-
-  // Tout sélectionner / désélectionner
-  overlay.querySelector("#chkPreclassAll").addEventListener("change", (e) => {
-    overlay.querySelectorAll(".preclass-chk").forEach(chk => { chk.checked = e.target.checked; });
-  });
-
-  // Chaque pill catégorie → ouvre une mini-popup de choix de catégorie
-  overlay.querySelectorAll(".preclass-cat-pill").forEach(pill => {
-    pill.addEventListener("click", () => {
-      const idx = parseInt(pill.dataset.idx);
-      ouvrirChoixCategoriePour(idx, categoriesModifiees, pill, overlay);
+    overlay.querySelector("#chkPreclassAll").addEventListener("change", (e) => {
+      overlay.querySelectorAll(".preclass-chk").forEach(cb => { cb.checked = e.target.checked; });
     });
-  });
 
-  // Ignorer tout → ferme sans rien appliquer
-  overlay.querySelector("#btnPreclassIgnorer").addEventListener("click", () => {
-    overlay.remove();
-    // Lance la popup de classification normale sur le mois actuellement affiché
-    render();
-    openClassificationModal();
-  });
-
-  // Décocher la sélection → retire les cochées de la liste
-  overlay.querySelector("#btnPreclassSkipChecked").addEventListener("click", () => {
-    overlay.querySelectorAll(".preclass-chk:checked").forEach(chk => {
-      chk.closest("tr").style.opacity = "0.35";
-      chk.checked = false;
+    // Boutons de tri
+    overlay.querySelectorAll(".preclass-sort-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const col = btn.dataset.sort;
+        if(sortCol === col) sortDir = sortDir === "asc" ? "desc" : "asc";
+        else { sortCol = col; sortDir = col === "confiance" ? "desc" : "asc"; }
+        overlay.querySelector("#sortBtnsZone").innerHTML = buildSortBtns();
+        overlay.querySelector("#preClassTableBody").innerHTML = buildLignes();
+        bindRowEvents();
+        // Rebind tri (les boutons ont été recréés)
+        overlay.querySelectorAll(".preclass-sort-btn").forEach(b => {
+          b.addEventListener("click", () => b.click());
+        });
+        bindAll_tri();
+      });
     });
-    overlay.querySelector("#chkPreclassAll").checked = false;
-  });
 
-  // Valider → applique les catégories cochées, chacune dans son propre mois
-  overlay.querySelector("#btnPreclassValider").addEventListener("click", () => {
-    const cochees = overlay.querySelectorAll(".preclass-chk:checked");
-    let nbValidees = 0;
-    cochees.forEach(chk => {
-      const idx = parseInt(chk.dataset.idx);
-      const item = preClassees[idx];
-      const cat = categoriesModifiees[idx];
-      classerOperation(item.moisKey, item.op.id, cat);
-      apprentissage(item.op.libelle, cat);
-      nbValidees++;
+    overlay.querySelector("#btnPreclassIgnorer").addEventListener("click", () => { overlay.remove(); openClassificationModal(); });
+
+    overlay.querySelector("#btnPreclassSkipChecked").addEventListener("click", () => {
+      overlay.querySelectorAll(".preclass-chk:checked").forEach(chk => {
+        chk.closest("tr").style.opacity = "0.35";
+        chk.checked = false;
+      });
+      overlay.querySelector("#chkPreclassAll").checked = false;
     });
-    overlay.remove();
-    render();
-    showToast(`${nbValidees} opération${nbValidees>1?'s':''} pré-classée${nbValidees>1?'s':''}. Les opérations restantes vous attendent dans le classement.`);
-  });
+
+    overlay.querySelector("#btnPreclassValider").addEventListener("click", () => {
+      let nbValidees = 0;
+      overlay.querySelectorAll(".preclass-chk:checked").forEach(chk => {
+        const idx = parseInt(chk.dataset.idx);
+        const item = items[idx];
+        const cat = categoriesModifiees[idx];
+        classerOperation(item.moisKey, item.op.id, cat);
+        apprentissage(item.op.libelle, cat);
+        nbValidees++;
+      });
+      overlay.remove();
+      render();
+      showToast(`${nbValidees} opération${nbValidees>1?"s":""} pré-classée${nbValidees>1?"s":""}. Les opérations restantes vous attendent dans le classement.`);
+    });
+
+    bindRowEvents();
+  }
+
+  function bindAll_tri(){
+    overlay.querySelectorAll(".preclass-sort-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const col = btn.dataset.sort;
+        if(sortCol === col) sortDir = sortDir === "asc" ? "desc" : "asc";
+        else { sortCol = col; sortDir = col === "confiance" ? "desc" : "asc"; }
+        overlay.querySelector("#sortBtnsZone").innerHTML = buildSortBtns();
+        overlay.querySelector("#preClassTableBody").innerHTML = buildLignes();
+        bindRowEvents();
+        bindAll_tri();
+      });
+    });
+  }
+
+  function bindRowEvents(){
+    overlay.querySelectorAll(".preclass-cat-pill").forEach(pill => {
+      pill.addEventListener("click", () => {
+        const idx = parseInt(pill.dataset.idx);
+        ouvrirChoixCategoriePour(idx, categoriesModifiees, pill, overlay);
+      });
+    });
+  }
+
+  bindAll();
 }
 
 // =========================================================
