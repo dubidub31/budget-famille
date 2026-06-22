@@ -44,42 +44,49 @@ body{
 /* ---------- Top bar ---------- */
 .topbar{
   display:flex;
+  flex-wrap:wrap;
   align-items:center;
-  justify-content:space-between;
-  padding:22px 36px;
+  gap:4px 6px;
+  padding:8px 16px;
   border-bottom:1px solid var(--line);
   position:sticky;
   top:0;
-  background:rgba(251,248,243,0.92);
+  background:rgba(251,248,243,0.96);
   backdrop-filter:blur(6px);
   z-index:40;
 }
-.brand{
-  display:flex;
-  align-items:baseline;
-  gap:10px;
-}
-.brand-mark{
-  font-family:'Fraunces',serif;
-  font-weight:560;
-  font-size:22px;
-  color:var(--ink);
-}
-.brand-mark span{color:var(--terracotta);}
-.month-switcher{
+.topbar-group{
   display:flex;
   align-items:center;
-  gap:14px;
+  gap:4px;
+  flex-shrink:0;
 }
-.month-switcher select{
+.topbar-group--right{
+  margin-left:auto;
+}
+.topbar-sep{
+  width:1px;
+  height:20px;
+  background:var(--line);
+  flex-shrink:0;
+  margin:0 2px;
+}
+.topbar-section-label{
   font-family:'Fraunces',serif;
-  font-size:19px;
-  font-weight:560;
+  font-size:16px;
+  font-weight:600;
   color:var(--ink);
-  background:var(--card);
+  margin-right:4px;
+}
+.mois-select{
+  font-family:'Fraunces',serif;
+  font-size:15px;
+  font-weight:600;
   border:1px solid var(--line);
   border-radius:var(--radius-sm);
-  padding:8px 14px;
+  padding:5px 10px;
+  background:var(--cream);
+  color:var(--ink);
   cursor:pointer;
 }
 .btn{
@@ -1731,42 +1738,67 @@ function renderTopbar(){
   const options = STATE.moisListe.map(m =>
     `<option value="${m}" ${m===STATE.moisActif?"selected":""}>${moisLabel(m)}</option>`
   ).join("");
+
+  if(currentView === "synthese"){
+    return `
+    <div class="topbar">
+      <div class="topbar-group">
+        <span class="topbar-section-label">Synthèse annuelle</span>
+        <button class="btn btn-secondary btn-sm" id="btnToggleSynthese">← Retour au mois</button>
+      </div>
+      <div class="topbar-group topbar-group--right">
+        <button class="btn btn-ghost btn-sm" id="btnExport">Exporter</button>
+        <button class="btn btn-ghost btn-sm" id="btnImportJSON">Importer sauvegarde</button>
+        <button class="btn btn-ghost btn-sm" id="btnGererApprentissages">⚙ Apprentissages</button>
+        <span id="syncIndicator" class="sync-indicator" style="cursor:pointer;">— <span style="font-size:11px; color:var(--ink-soft);">Sync désactivée</span></span>
+      </div>
+    </div>
+    <input type="file" id="csvFileInput" accept=".csv" style="display:none">
+    <input type="file" id="jsonFileInput" accept=".json" style="display:none">
+    `;
+  }
+
   return `
   <div class="topbar">
-    <div class="brand">
-      <span class="brand-mark">Budget<span>.</span>Famille</span>
+    <div class="topbar-group">
+      <select id="moisSelect" class="mois-select">${options}</select>
+      <button class="btn btn-ghost btn-sm" id="btnNouveauMois">+ Nouveau mois</button>
     </div>
-    <div class="month-switcher">
-      ${currentView === "dashboard" ? `
-        <select id="moisSelect">${options}</select>
-        <button class="btn btn-ghost btn-sm" id="btnNouveauMois">+ Nouveau mois</button>
-      ` : `<span class="status-title display" style="font-size:18px;">Synthèse annuelle</span>`}
+    <div class="topbar-sep"></div>
+    <div class="topbar-group">
+      <button class="btn btn-secondary btn-sm" id="btnImportCSV">↑ Importer CSV</button>
+      <button class="btn btn-ghost btn-sm" id="btnExport">↓ Exporter</button>
+      <button class="btn btn-ghost btn-sm" id="btnImportJSON">↓ Sauvegarde</button>
     </div>
-    <div class="topbar-actions">
-      <button class="btn ${currentView==='synthese'?'btn-primary':'btn-secondary'} btn-sm" id="btnToggleSynthese">${currentView==='synthese' ? '← Retour au mois' : 'Synthèse annuelle'}</button>
-      ${currentView === "dashboard" ? `
-        <button class="btn btn-secondary btn-sm" id="btnImportCSV">Importer un relevé CSV</button>
-        <button class="btn btn-ghost btn-sm" id="btnPreclassManuel" title="Passer les opérations non classées dans la moulinette des apprentissages">🔍 Reconnaissance auto</button>
-        <button class="btn btn-primary btn-sm" id="btnClasser">Classer les opérations</button>
-        <div class="dropdown-wrap" id="moisOptionsWrap">
-          <button class="btn btn-ghost btn-sm" id="btnMoisOptions" style="color:var(--rouge);">🗑 Options du mois ▾</button>
-          ${moisOptionsOpen ? `
-          <div class="dropdown-menu">
-            <button class="dropdown-item" id="btnReinitMoisComplet">
-              <span class="dropdown-item-title">Réinitialiser les opérations</span>
-              <span class="dropdown-item-sub">Vide les opérations classées, garde l'onglet (à réimporter via CSV)</span>
-            </button>
-            <button class="dropdown-item" id="btnSupprimerMoisOnglet">
-              <span class="dropdown-item-title" style="color:var(--rouge);">Supprimer ce mois entièrement</span>
-              <span class="dropdown-item-sub">Retire l'onglet, ses opérations, son prévisionnel et son solde</span>
-            </button>
-          </div>` : ``}
-        </div>
-      ` : ``}
-      <button class="btn btn-ghost btn-sm" id="btnExport" title="Sauvegarder vos données dans un fichier">Exporter</button>
-      <button class="btn btn-ghost btn-sm" id="btnImportJSON" title="Restaurer une sauvegarde .json">Importer une sauvegarde</button>
-      <button class="btn btn-ghost btn-sm" id="btnGererApprentissages" title="Voir et gérer les règles mémorisées">⚙ Apprentissages</button>
-      <span id="syncIndicator" class="sync-indicator" title="Cliquer pour configurer ou forcer une synchronisation" id="syncIndicatorBtn" style="cursor:pointer;">— <span style="font-size:11px; color:var(--ink-soft);">Sync désactivée</span></span>
+    <div class="topbar-sep"></div>
+    <div class="topbar-group">
+      <button class="btn btn-ghost btn-sm" id="btnPreclassManuel" title="Passer les opérations non classées dans la moulinette des apprentissages">🔍 Reconnaissance</button>
+      <button class="btn btn-primary btn-sm" id="btnClasser">Classer →</button>
+    </div>
+    <div class="topbar-sep"></div>
+    <div class="topbar-group">
+      <div class="dropdown-wrap" id="moisOptionsWrap">
+        <button class="btn btn-ghost btn-sm" id="btnMoisOptions" style="color:var(--rouge);">🗑 Mois ▾</button>
+        ${moisOptionsOpen ? `
+        <div class="dropdown-menu">
+          <button class="dropdown-item" id="btnReinitMoisComplet">
+            <span class="dropdown-item-title">Réinitialiser les opérations</span>
+            <span class="dropdown-item-sub">Vide les opérations classées, garde l'onglet (à réimporter via CSV)</span>
+          </button>
+          <button class="dropdown-item" id="btnSupprimerMoisOnglet">
+            <span class="dropdown-item-title" style="color:var(--rouge);">Supprimer ce mois entièrement</span>
+            <span class="dropdown-item-sub">Retire l'onglet, ses opérations, son prévisionnel et son solde</span>
+          </button>
+        </div>` : ``}
+      </div>
+    </div>
+    <div class="topbar-sep"></div>
+    <div class="topbar-group">
+      <button class="btn ${currentView==='synthese'?'btn-primary':'btn-ghost'} btn-sm" id="btnToggleSynthese">Synthèse</button>
+      <button class="btn btn-ghost btn-sm" id="btnGererApprentissages">⚙ Apprentissages</button>
+    </div>
+    <div class="topbar-group topbar-group--right">
+      <span id="syncIndicator" class="sync-indicator" style="cursor:pointer;">— <span style="font-size:11px; color:var(--ink-soft);">Sync désactivée</span></span>
     </div>
   </div>
   <input type="file" id="csvFileInput" accept=".csv" style="display:none">
