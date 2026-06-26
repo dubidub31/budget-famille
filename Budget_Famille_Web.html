@@ -2029,11 +2029,11 @@ function renderCharts(){
   <div class="charts-grid">
     <div class="chart-card">
       <h3 class="chart-title display">Répartition des dépenses (réel)</h3>
-      <canvas id="chartRepartition" height="160"></canvas>
+      <div style="position:relative; height:170px;"><canvas id="chartRepartition"></canvas></div>
     </div>
     <div class="chart-card">
       <h3 class="chart-title display">Prévisionnel vs réel</h3>
-      <canvas id="chartPrevReel" height="160"></canvas>
+      <div style="position:relative; height:170px;"><canvas id="chartPrevReel"></canvas></div>
     </div>
   </div>`;
 }
@@ -2116,10 +2116,6 @@ function renderOpsTablePartial(){
   });
 
   // Mettre à jour uniquement le tbody
-  const savedScrollY = window.scrollY;
-  const filterInput = document.getElementById("filterLibelleInput");
-  filterInput?.blur();
-
   const tbody = document.querySelector(".ops-table tbody");
   if(tbody){
     tbody.innerHTML = ops.map(op => {
@@ -2156,14 +2152,6 @@ function renderOpsTablePartial(){
   if(sousTotalLabel) sousTotalLabel.textContent = hasFiltres
     ? `Sous-total (${ops.length} opération${ops.length>1?'s':''} affichée${ops.length>1?'s':''})`
     : `Total (${ops.length} opération${ops.length>1?'s':''})`;
-
-  // Restaurer la position de scroll immédiatement et après le layout
-  window.scrollTo(0, savedScrollY);
-  requestAnimationFrame(() => {
-    window.scrollTo(0, savedScrollY);
-    const inp = document.getElementById("filterLibelleInput");
-    if(inp) inp.focus();
-  });
 }
 
 // Extrait la cellule libellé avec tooltip (factorisée pour renderOpsTablePartial)
@@ -2631,7 +2619,6 @@ function attachDashboardEvents(){
   // Filtre texte libre sur le libellé — mise à jour partielle sans re-render global
   const filterLibelleInput = document.getElementById("filterLibelleInput");
   if(filterLibelleInput){
-    // Positionner le menu fixed sous le bouton filtre
     const filterBtn = document.querySelector('.th-filter-btn[data-filter-toggle="libelle"]');
     const menu = document.querySelector(".filter-menu-libelle");
     if(filterBtn && menu){
@@ -2640,16 +2627,23 @@ function attachDashboardEvents(){
       menu.style.left = rect.left + "px";
     }
     filterLibelleInput.focus();
-    // Placer le curseur en fin de valeur existante
     const len = filterLibelleInput.value.length;
     filterLibelleInput.setSelectionRange(len, len);
 
     filterLibelleInput.addEventListener("input", (e) => {
       e.stopPropagation();
+      // Sauvegarder le scroll AVANT toute modification DOM
+      const sy = window.scrollY;
       const val = e.target.value;
       if(val.trim()) opsColumnFilters["libelle"] = val.trim();
       else delete opsColumnFilters["libelle"];
       renderOpsTablePartial();
+      // Restaurer immédiatement et après layout
+      window.scrollTo(0, sy);
+      requestAnimationFrame(() => {
+        window.scrollTo(0, sy);
+        document.getElementById("filterLibelleInput")?.focus();
+      });
     });
     filterLibelleInput.addEventListener("keydown", (e) => {
       if(e.key === "Escape"){ openFilterMenu = null; render(); }
@@ -3786,6 +3780,7 @@ function drawChartRepartition(){
         datasets: [{ data: items.map(it => it.val), backgroundColor: shades, borderWidth: 0, hoverOffset: 6 }]
       },
       options: {
+        maintainAspectRatio: false,
         plugins: {
           legend: { position: "bottom", labels: { font: { family:"Inter", size: 11 }, padding: 10, boxWidth: 12 } },
           tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}: ${fmtEUR(ctx.parsed)}` } }
@@ -3826,6 +3821,7 @@ function drawChartRepartition(){
       }]
     },
     options: {
+      maintainAspectRatio: false,
       onClick: (evt, elements) => {
         if(elements && elements.length > 0){
           const idx = elements[0].index;
@@ -3903,9 +3899,10 @@ function drawChartPrevReel(){
       ]
     },
     options: {
+      maintainAspectRatio: false,
       plugins: {
         legend: { position: "bottom", labels: { font: { family: "Inter", size: 12 }, padding: 14 } },
-        tooltip: { callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${fmtEUR(ctx.parsed.y)}` } }
+        tooltip: { callbacks: { label: (ctx) => " " + ctx.dataset.label + ": " + fmtEUR(ctx.parsed.y) } }
       },
       scales: {
         y: { ticks: { callback: (v) => fmtEUR(v), font: { family:"Inter", size: 11 } }, grid: { color: "#EFEAE0" } },
