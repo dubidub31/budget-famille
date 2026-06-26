@@ -247,6 +247,16 @@ body{
 .section-total-real{font-family:'Fraunces',serif; font-size:22px;}
 .section-total-prev{font-size:12.5px; color:var(--ink-soft);}
 
+.section-col-headers{
+  display:grid;
+  grid-template-columns:1fr 88px 88px;
+  gap:10px;
+  padding:5px 24px 5px 24px;
+  border-bottom:1px solid var(--line);
+  margin-bottom:2px;
+}
+.section-col-th{ display:block; }
+
 .cat-list{padding:6px 10px 14px;}
 .cat-row{
   display:grid;
@@ -1948,19 +1958,16 @@ function renderSectionCard(sectionKey){
   const totalPrev = totalSectionPrevisionnel(moisKey, sectionKey);
   const sort = sectionSort[sectionKey];
 
-  // Construire les lignes triées
   let items = section.items.map(cat => ({
-    cat,
-    r: reals[cat] || 0,
-    p: prev[cat] !== undefined ? prev[cat] : 0
+    cat, r: reals[cat] || 0, p: prev[cat] !== undefined ? prev[cat] : 0
   }));
 
   if(sort.col === "alpha"){
-    items.sort((a, b) => sort.dir === "asc"
-      ? a.cat.localeCompare(b.cat, 'fr')
-      : b.cat.localeCompare(a.cat, 'fr'));
-  } else if(sort.col === "montant"){
-    items.sort((a, b) => sort.dir === "asc" ? a.r - b.r : b.r - a.r);
+    items.sort((a,b) => sort.dir==="asc" ? a.cat.localeCompare(b.cat,'fr') : b.cat.localeCompare(a.cat,'fr'));
+  } else if(sort.col === "budget"){
+    items.sort((a,b) => sort.dir==="asc" ? a.p - b.p : b.p - a.p);
+  } else if(sort.col === "reel"){
+    items.sort((a,b) => sort.dir==="asc" ? a.r - b.r : b.r - a.r);
   }
 
   const rows = items.map(({ cat, r, p }) => `
@@ -1970,14 +1977,15 @@ function renderSectionCard(sectionKey){
       <span class="cat-real ${r===0?'zero':''}">${fmtEUR(r)}</span>
     </div>`).join("");
 
-  const sortBtn = (col, label) => {
+  const th = (col, label, align) => {
     const active = sort.col === col;
-    const arrow = active ? (sort.dir === "asc" ? " ▲" : " ▼") : "";
-    return `<button class="section-sort-btn${active?' active':''}" data-section="${sectionKey}" data-sort-col="${col}"
-      style="background:none; border:none; cursor:pointer; font-size:10px; font-weight:${active?700:500};
-      color:${active?'var(--ink)':'var(--ink-soft)'}; padding:2px 5px; border-radius:4px;
-      ${active?'background:rgba(0,0,0,0.06);':''}"
-    >${label}${arrow}</button>`;
+    const arrow = active ? (sort.dir==="asc" ? " ▲" : " ▼") : " ⇅";
+    const style = `cursor:pointer; user-select:none; font-size:11px; text-transform:uppercase;
+      letter-spacing:.05em; font-weight:600; color:${active?'var(--ink)':'var(--ink-soft)'};
+      padding:7px 0; ${align==='right'?'text-align:right;':''}
+      ${active?'border-bottom:2px solid var(--ink);':'border-bottom:2px solid transparent;'}`;
+    return `<span class="section-col-th" data-section="${sectionKey}" data-sort-col="${col}"
+      style="${style}">${label}<span style="opacity:${active?1:0.4}; font-size:9px;">${arrow}</span></span>`;
   };
 
   return `
@@ -1985,13 +1993,14 @@ function renderSectionCard(sectionKey){
     <div class="section-head">
       <span class="tag">${section.label}</span>
       <div class="section-totals">
-        <div class="section-sort-btns" style="display:flex; gap:2px; margin-right:10px;">
-          ${sortBtn("alpha", "A→Z")}
-          ${sortBtn("montant", "Montant")}
-        </div>
         <span class="section-total-prev">Prévu ${fmtEUR(totalPrev)}</span>
         <span class="section-total-real display">${fmtEUR(totalReal)}</span>
       </div>
+    </div>
+    <div class="section-col-headers">
+      ${th("alpha", "Catégorie", "left")}
+      ${th("budget", "Budget", "right")}
+      ${th("reel", "Réel", "right")}
     </div>
     <div class="cat-list">${rows}</div>
   </div>
@@ -2078,9 +2087,13 @@ function renderOpsTable(){
   if(opsQuickFilter === "aClasser") ops = ops.filter(o => !o.categorie);
   if(opsQuickFilter === "classees") ops = ops.filter(o => o.categorie);
 
-  // Filtres par colonne (clic sur en-tête)
+  // Filtres par colonne
   Object.entries(opsColumnFilters).forEach(([col, val]) => {
     ops = ops.filter(o => {
+      // Libellé : recherche partielle insensible à la casse
+      if(col === "libelle"){
+        return (o.libelle || "").toLowerCase().includes(val.toLowerCase());
+      }
       let v;
       if(col === "carte") v = o.carte || "—";
       else if(col === "sousCategorie") v = o.sousCategorie || "—";
@@ -2158,16 +2171,35 @@ function renderOpsTable(){
 
     let filterMenuHtml = "";
     if(openFilterMenu === col.key){
-      const values = uniqueColumnValues(allOps, col.key);
-      const current = opsColumnFilters[col.key];
-      const items = values.map(v =>
-        `<div class="filter-menu-item ${current===v?'active':''}" data-filter-col="${col.key}" data-filter-val="${escapeAttr(v)}">${escapeHtml(String(v))}</div>`
-      ).join("");
-      filterMenuHtml = `
-        <div class="filter-menu" data-filter-menu="${col.key}">
-          <div class="filter-menu-item filter-menu-clear" data-filter-col="${col.key}" data-filter-val="__ALL__">Toutes les valeurs</div>
-          ${items}
-        </div>`;
+      if(col.key === "libelle"){
+        // Filtre texte libre pour le libellé
+        const currentVal = opsColumnFilters[col.key] || "";
+        filterMenuHtml = `
+          <div class="filter-menu" data-filter-menu="${col.key}" style="min-width:220px;">
+            <div style="padding:8px 10px;">
+              <input type="text" id="filterLibelleInput" class="filter-text-input"
+                value="${escapeAttr(currentVal)}"
+                placeholder="Rechercher un libellé…"
+                autofocus
+                style="width:100%; border:1px solid var(--line); border-radius:6px; padding:6px 9px;
+                font-size:13px; font-family:inherit; background:var(--cream); box-sizing:border-box;">
+            </div>
+            <div class="filter-menu-item filter-menu-clear" data-filter-col="${col.key}" data-filter-val="__ALL__">
+              Effacer le filtre
+            </div>
+          </div>`;
+      } else {
+        const values = uniqueColumnValues(allOps, col.key);
+        const current = opsColumnFilters[col.key];
+        const items = values.map(v =>
+          `<div class="filter-menu-item ${current===v?'active':''}" data-filter-col="${col.key}" data-filter-val="${escapeAttr(v)}">${escapeHtml(String(v))}</div>`
+        ).join("");
+        filterMenuHtml = `
+          <div class="filter-menu" data-filter-menu="${col.key}">
+            <div class="filter-menu-item filter-menu-clear" data-filter-col="${col.key}" data-filter-val="__ALL__">Toutes les valeurs</div>
+            ${items}
+          </div>`;
+      }
     }
 
     return `<th${alignStyle}>
@@ -2391,7 +2423,7 @@ function attachDashboardEvents(){
   const btnClasserHero = document.getElementById("btnClasserHero");
   if(btnClasserHero) btnClasserHero.addEventListener("click", () => openClassificationModal());
 
-  document.querySelectorAll(".section-sort-btn").forEach(btn => {
+  document.querySelectorAll(".section-col-th").forEach(btn => {
     btn.addEventListener("click", () => {
       const sec = btn.dataset.section;
       const col = btn.dataset.sortCol;
@@ -2399,7 +2431,7 @@ function attachDashboardEvents(){
         sectionSort[sec].dir = sectionSort[sec].dir === "asc" ? "desc" : "asc";
       } else {
         sectionSort[sec].col = col;
-        sectionSort[sec].dir = col === "montant" ? "desc" : "asc";
+        sectionSort[sec].dir = (col === "budget" || col === "reel") ? "desc" : "asc";
       }
       render();
     });
@@ -2502,6 +2534,28 @@ function attachDashboardEvents(){
       render();
     });
   });
+
+  // Filtre texte libre sur le libellé
+  const filterLibelleInput = document.getElementById("filterLibelleInput");
+  if(filterLibelleInput){
+    filterLibelleInput.focus();
+    filterLibelleInput.addEventListener("input", (e) => {
+      const val = e.target.value.trim();
+      if(val) opsColumnFilters["libelle"] = val;
+      else delete opsColumnFilters["libelle"];
+      // Re-render sans fermer le menu
+      openFilterMenu = "libelle";
+      render();
+      // Remettre le focus sur le champ après re-render
+      const newInput = document.getElementById("filterLibelleInput");
+      if(newInput){ newInput.focus(); newInput.value = val; newInput.setSelectionRange(val.length, val.length); }
+    });
+    filterLibelleInput.addEventListener("keydown", (e) => {
+      if(e.key === "Escape"){ openFilterMenu = null; render(); }
+      if(e.key === "Enter"){ openFilterMenu = null; render(); }
+      e.stopPropagation();
+    });
+  }
   document.querySelectorAll(".filter-menu").forEach(menu => {
     menu.addEventListener("click", (e) => e.stopPropagation());
   });
