@@ -1641,10 +1641,20 @@ function normaliserLibelle(libelle){
     .slice(0, 40);               // limite à 40 chars pour la clé
 }
 
-function apprentissage(libelle, categorie){
+function apprentissage(libelle, categorie, montant){
   if(!STATE.regles) STATE.regles = {};
   const cle = normaliserLibelle(libelle);
   if(!cle) return;
+
+  // Vérification de cohérence signe / section
+  // Si montant est fourni, on refuse de mémoriser une règle incohérente
+  if(montant !== undefined && montant !== null){
+    const isCredit = montant >= 0;
+    const sec = categorieSection(categorie);
+    const sectionValide = isCredit ? sec === "revenus" : sec !== "revenus";
+    if(!sectionValide) return; // on ne mémorise pas une règle incohérente
+  }
+
   const existant = STATE.regles[cle];
   if(existant && existant.categorie === categorie){
     existant.score = Math.min((existant.score || 1) + 1, 20);
@@ -1662,13 +1672,25 @@ function supprimerRegle(libelle){
   saveState();
 }
 
-function chercherRegle(libelle){
+function chercherRegle(libelle, montant){
   if(!STATE.regles) return null;
   const cle = normaliserLibelle(libelle);
   if(!cle) return null;
+
+  // Détermine les sections compatibles avec le signe du montant
+  const isCredit = montant >= 0;
+  const sectionsCompatibles = isCredit ? ["revenus"] : ["fixes","variables","epargne"];
+
+  function regleCompatible(regle){
+    if(!regle) return false;
+    const sec = categorieSection(regle.categorie);
+    return sectionsCompatibles.includes(sec);
+  }
+
   // Correspondance exacte
-  if(STATE.regles[cle]) return STATE.regles[cle];
-  // Correspondance approximative : on cherche une clé dont les 10 premiers chars matchent
+  if(STATE.regles[cle] && regleCompatible(STATE.regles[cle])) return STATE.regles[cle];
+
+  // Correspondance approximative
   const debut = cle.slice(0, 10);
   if(debut.length < 4) return null;
   let meilleur = null;
@@ -1676,7 +1698,7 @@ function chercherRegle(libelle){
   for(const k in STATE.regles){
     if(k.startsWith(debut)){
       const r = STATE.regles[k];
-      if(r.score > meilleurScore){
+      if(r.score > meilleurScore && regleCompatible(r)){
         meilleurScore = r.score;
         meilleur = r;
       }
@@ -1686,16 +1708,13 @@ function chercherRegle(libelle){
 }
 
 // Applique les règles mémorisées à une liste d'opérations.
-// Retourne { preClassees: [{op, categorie, regle}], aClasser: [op] }
+// Retourne { preClassees: [{op, categorie, score}], aClasser: [op] }
 function preClasserOperations(ops){
   const preClassees = [];
   const aClasser = [];
   ops.forEach(op => {
-    if(op.categorie){
-      // déjà classée, on skip
-      return;
-    }
-    const regle = chercherRegle(op.libelle);
+    if(op.categorie) return;
+    const regle = chercherRegle(op.libelle, op.montant);
     if(regle){
       preClassees.push({ op, categorie: regle.categorie, score: regle.score });
     } else {
@@ -3031,7 +3050,7 @@ function renderClassificationStep(){
           const op = (STATE.operations[moisKey]||[]).find(o => o.id === id);
           if(op){
             classerOperation(moisKey, id, categorie);
-            apprentissage(op.libelle, categorie);
+            apprentissage(op.libelle, categorie, op.montant);
           }
         });
         selectedOpIds.clear();
@@ -3039,9 +3058,8 @@ function renderClassificationStep(){
         showToast(`${classificationTotal} opération${classificationTotal>1?'s':''} classée${classificationTotal>1?'s':''} en "${categorie}".`);
       } else {
         classerOperation(moisKey, opId, categorie);
-        // Apprentissage : mémoriser libellé → catégorie
         const op = (STATE.operations[moisKey]||[]).find(o => o.id === opId);
-        if(op) apprentissage(op.libelle, categorie);
+        if(op) apprentissage(op.libelle, categorie, op.montant);
         classificationQueue.shift();
         classificationDone++;
         renderClassificationStep();
@@ -3235,7 +3253,7 @@ function ouvrirValidationPreclassificationMultiMois(items){
         const item = items[idx];
         const cat = categoriesModifiees[idx];
         classerOperation(item.moisKey, item.op.id, cat);
-        apprentissage(item.op.libelle, cat);
+        apprentissage(item.op.libelle, cat, item.op.montant);
         nbValidees++;
       });
       overlay.remove();
