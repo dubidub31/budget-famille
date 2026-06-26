@@ -301,13 +301,13 @@ body{
   background:var(--card);
   border-radius:var(--radius-lg);
   box-shadow:var(--shadow);
-  padding:24px 26px 18px;
+  padding:16px 20px 12px;
 }
 .chart-title{
   font-family:'Fraunces',serif;
-  font-size:17px;
+  font-size:15px;
   font-weight:560;
-  margin:0 0 16px;
+  margin:0 0 10px;
 }
 
 /* ---------- Operations table ---------- */
@@ -1941,13 +1941,20 @@ function renderHero(){
   `;
 }
 
-// État de tri par section : { revenus: {col, dir}, fixes: ..., variables: ..., epargne: ... }
-const sectionSort = {
-  revenus:   { col: "alpha", dir: "asc" },
-  fixes:     { col: "alpha", dir: "asc" },
-  variables: { col: "alpha", dir: "asc" },
-  epargne:   { col: "alpha", dir: "asc" }
-};
+// État de tri par section PAR MOIS : { "2026-05": { revenus: {col, dir}, ... } }
+const sectionSortByMois = {};
+
+function getSectionSort(moisKey, sectionKey){
+  if(!sectionSortByMois[moisKey]){
+    sectionSortByMois[moisKey] = {
+      revenus:   { col: "alpha", dir: "asc" },
+      fixes:     { col: "alpha", dir: "asc" },
+      variables: { col: "alpha", dir: "asc" },
+      epargne:   { col: "alpha", dir: "asc" }
+    };
+  }
+  return sectionSortByMois[moisKey][sectionKey];
+}
 
 function renderSectionCard(sectionKey){
   const section = CATEGORIES[sectionKey];
@@ -1956,7 +1963,7 @@ function renderSectionCard(sectionKey){
   const prev = STATE.previsionnel[moisKey] || defaultPrevisionnel();
   const totalReal = totalSection(moisKey, sectionKey);
   const totalPrev = totalSectionPrevisionnel(moisKey, sectionKey);
-  const sort = sectionSort[sectionKey];
+  const sort = getSectionSort(moisKey, sectionKey);
 
   let items = section.items.map(cat => ({
     cat, r: reals[cat] || 0, p: prev[cat] !== undefined ? prev[cat] : 0
@@ -2022,11 +2029,11 @@ function renderCharts(){
   <div class="charts-grid">
     <div class="chart-card">
       <h3 class="chart-title display">Répartition des dépenses (réel)</h3>
-      <canvas id="chartRepartition" height="220"></canvas>
+      <canvas id="chartRepartition" height="160"></canvas>
     </div>
     <div class="chart-card">
       <h3 class="chart-title display">Prévisionnel vs réel</h3>
-      <canvas id="chartPrevReel" height="220"></canvas>
+      <canvas id="chartPrevReel" height="160"></canvas>
     </div>
   </div>`;
 }
@@ -2076,6 +2083,98 @@ function renderNotesMois(){
       rows="3"
     >${escapeHtml(note)}</textarea>
   </div>`;
+}
+
+// Mise à jour partielle du tableau (sans re-render global) — évite le scroll
+// Utilisé notamment pour le filtre texte du libellé
+function renderOpsTablePartial(){
+  const moisKey = STATE.moisActif;
+  const allOps = STATE.operations[moisKey] || [];
+
+  // Recalculer les ops filtrées (même logique que dans renderOpsTable)
+  let ops = [...allOps];
+  if(opsQuickFilter === "aClasser") ops = ops.filter(o => !o.categorie);
+  if(opsQuickFilter === "classees") ops = ops.filter(o => o.categorie);
+  Object.entries(opsColumnFilters).forEach(([col, val]) => {
+    ops = ops.filter(o => {
+      if(col === "libelle") return (o.libelle || "").toLowerCase().includes(val.toLowerCase());
+      let v;
+      if(col === "carte") v = o.carte || "—";
+      else if(col === "sousCategorie") v = o.sousCategorie || "—";
+      else if(col === "categorie") v = o.categorie || "À classer";
+      else v = o[col];
+      return String(v) === String(val);
+    });
+  });
+  ops.sort((a,b) => {
+    const va = getOpValueForSort(a, opsSortColumn);
+    const vb = getOpValueForSort(b, opsSortColumn);
+    let cmp;
+    if(typeof va === "number" && typeof vb === "number") cmp = va - vb;
+    else cmp = String(va).localeCompare(String(vb), 'fr');
+    return opsSortDir === "asc" ? cmp : -cmp;
+  });
+
+  // Mettre à jour uniquement le tbody
+  const savedScrollY = window.scrollY;
+  const filterInput = document.getElementById("filterLibelleInput");
+  filterInput?.blur();
+
+  const tbody = document.querySelector(".ops-table tbody");
+  if(tbody){
+    tbody.innerHTML = ops.map(op => {
+      const libelleHtml = renderLibelleCell(op);
+      const montantClass = op.montant >= 0 ? "credit" : "debit";
+      const catCell = renderCategorieCell(op);
+      const isSelected = selectedOpIds.has(op.id);
+      const commentaire = (STATE.commentaires && STATE.commentaires[op.id]) || "";
+      return `
+      <tr data-op-row="${op.id}" class="${isSelected?'row-selected':''}">
+        <td class="col-check"><input type="checkbox" class="op-checkbox" data-op-id="${op.id}" ${isSelected?'checked':''}></td>
+        <td>${fmtDateFr(op.date)}</td>
+        <td class="libelle-cell">${libelleHtml}</td>
+        <td>${op.carte ? escapeHtml(op.carte) : '<span class="muted">—</span>'}</td>
+        <td>${op.sousCategorie ? escapeHtml(op.sousCategorie) : '<span class="muted">—</span>'}</td>
+        <td class="amount-cell ${montantClass}">${op.montant>=0?'+':''}${fmtEUR(op.montant)}</td>
+        <td>${catCell}</td>
+        <td class="commentaire-cell">
+          <input type="text" class="op-commentaire-input" data-op-id="${op.id}"
+            value="${escapeAttr(commentaire)}" placeholder="…"
+            style="width:100%; min-width:120px; border:1px solid transparent; background:transparent; font-size:12.5px;
+            color:var(--ink); font-family:inherit; outline:none; padding:3px 6px; border-radius:5px; box-sizing:border-box;">
+        </td>
+      </tr>`;
+    }).join("");
+  }
+
+  // Mettre à jour le sous-total
+  const sousTotal = ops.reduce((s,o) => s + o.montant, 0);
+  const hasFiltres = Object.keys(opsColumnFilters).length > 0 || opsQuickFilter !== "toutes";
+  const sousTotalEl = document.querySelector(".ops-subtotal-amount");
+  const sousTotalLabel = document.querySelector(".ops-subtotal-label");
+  if(sousTotalEl) sousTotalEl.textContent = (sousTotal >= 0 ? "+" : "") + fmtEUR(sousTotal);
+  if(sousTotalLabel) sousTotalLabel.textContent = hasFiltres
+    ? `Sous-total (${ops.length} opération${ops.length>1?'s':''} affichée${ops.length>1?'s':''})`
+    : `Total (${ops.length} opération${ops.length>1?'s':''})`;
+
+  // Restaurer la position de scroll immédiatement et après le layout
+  window.scrollTo(0, savedScrollY);
+  requestAnimationFrame(() => {
+    window.scrollTo(0, savedScrollY);
+    const inp = document.getElementById("filterLibelleInput");
+    if(inp) inp.focus();
+  });
+}
+
+// Extrait la cellule libellé avec tooltip (factorisée pour renderOpsTablePartial)
+function renderLibelleCell(op){
+  const tooltipParts = [];
+  if(op.libelleOperation) tooltipParts.push(op.libelleOperation);
+  if(op.sousCategorie) tooltipParts.push("Sous-cat. : " + op.sousCategorie);
+  if(op.detail) tooltipParts.push(op.detail);
+  return tooltipParts.length
+    ? `<span class="has-tooltip" data-tooltip="${escapeAttr(tooltipParts.join(' | '))}">${escapeHtml(op.libelle)}</span>`
+    : escapeHtml(op.libelle);
 }
 
 function renderOpsTable(){
@@ -2128,13 +2227,7 @@ function renderOpsTable(){
   }
 
   const rows = ops.map(op => {
-    const tooltipParts = [];
-    if(op.libelleOperation) tooltipParts.push(op.libelleOperation);
-    if(op.sousCategorie) tooltipParts.push("Sous-cat. : " + op.sousCategorie);
-    if(op.detail) tooltipParts.push(op.detail);
-    const libelleHtml = tooltipParts.length
-      ? `<span class="has-tooltip" data-tooltip="${escapeAttr(tooltipParts.join(' | '))}">${escapeHtml(op.libelle)}</span>`
-      : escapeHtml(op.libelle);
+    const libelleHtml = renderLibelleCell(op);
 
     const montantClass = op.montant >= 0 ? "credit" : "debit";
     const catCell = renderCategorieCell(op);
@@ -2172,10 +2265,9 @@ function renderOpsTable(){
     let filterMenuHtml = "";
     if(openFilterMenu === col.key){
       if(col.key === "libelle"){
-        // Filtre texte libre pour le libellé
         const currentVal = opsColumnFilters[col.key] || "";
         filterMenuHtml = `
-          <div class="filter-menu" data-filter-menu="${col.key}" style="min-width:220px;">
+          <div class="filter-menu filter-menu-libelle" data-filter-menu="${col.key}" style="min-width:240px; position:fixed; z-index:200;">
             <div style="padding:8px 10px;">
               <input type="text" id="filterLibelleInput" class="filter-text-input"
                 value="${escapeAttr(currentVal)}"
@@ -2243,7 +2335,7 @@ function renderOpsTable(){
     ${selectionBar}
     <div class="ops-subtotal-bar">
       <span class="ops-subtotal-label">${sousTotalLabel}</span>
-      <span class="ops-subtotal-value ${sousTotalClass} display">${sousTotal>=0?'+':''}${fmtEUR(sousTotal,true)}</span>
+      <span class="ops-subtotal-amount ops-subtotal-value ${sousTotalClass} display">${sousTotal>=0?'+':''}${fmtEUR(sousTotal)}</span>
     </div>
     <div class="ops-table-scroll">
       <table class="ops-table">
@@ -2427,11 +2519,12 @@ function attachDashboardEvents(){
     btn.addEventListener("click", () => {
       const sec = btn.dataset.section;
       const col = btn.dataset.sortCol;
-      if(sectionSort[sec].col === col){
-        sectionSort[sec].dir = sectionSort[sec].dir === "asc" ? "desc" : "asc";
+      const sort = getSectionSort(STATE.moisActif, sec);
+      if(sort.col === col){
+        sort.dir = sort.dir === "asc" ? "desc" : "asc";
       } else {
-        sectionSort[sec].col = col;
-        sectionSort[sec].dir = (col === "budget" || col === "reel") ? "desc" : "asc";
+        sort.col = col;
+        sort.dir = (col === "budget" || col === "reel") ? "desc" : "asc";
       }
       render();
     });
@@ -2535,26 +2628,35 @@ function attachDashboardEvents(){
     });
   });
 
-  // Filtre texte libre sur le libellé
+  // Filtre texte libre sur le libellé — mise à jour partielle sans re-render global
   const filterLibelleInput = document.getElementById("filterLibelleInput");
   if(filterLibelleInput){
+    // Positionner le menu fixed sous le bouton filtre
+    const filterBtn = document.querySelector('.th-filter-btn[data-filter-toggle="libelle"]');
+    const menu = document.querySelector(".filter-menu-libelle");
+    if(filterBtn && menu){
+      const rect = filterBtn.getBoundingClientRect();
+      menu.style.top = (rect.bottom + 4) + "px";
+      menu.style.left = rect.left + "px";
+    }
     filterLibelleInput.focus();
+    // Placer le curseur en fin de valeur existante
+    const len = filterLibelleInput.value.length;
+    filterLibelleInput.setSelectionRange(len, len);
+
     filterLibelleInput.addEventListener("input", (e) => {
-      const val = e.target.value.trim();
-      if(val) opsColumnFilters["libelle"] = val;
+      e.stopPropagation();
+      const val = e.target.value;
+      if(val.trim()) opsColumnFilters["libelle"] = val.trim();
       else delete opsColumnFilters["libelle"];
-      // Re-render sans fermer le menu
-      openFilterMenu = "libelle";
-      render();
-      // Remettre le focus sur le champ après re-render
-      const newInput = document.getElementById("filterLibelleInput");
-      if(newInput){ newInput.focus(); newInput.value = val; newInput.setSelectionRange(val.length, val.length); }
+      renderOpsTablePartial();
     });
     filterLibelleInput.addEventListener("keydown", (e) => {
       if(e.key === "Escape"){ openFilterMenu = null; render(); }
       if(e.key === "Enter"){ openFilterMenu = null; render(); }
       e.stopPropagation();
     });
+    filterLibelleInput.addEventListener("click", (e) => e.stopPropagation());
   }
   document.querySelectorAll(".filter-menu").forEach(menu => {
     menu.addEventListener("click", (e) => e.stopPropagation());
