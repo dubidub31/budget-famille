@@ -825,6 +825,12 @@ tr.row-selected td{background:var(--terracotta-soft) !important;}
 }
 .sync-menu-item:hover{background:var(--cream-deep);}
 
+.cat-stamp--disabled{
+  opacity:0.3;
+  cursor:not-allowed !important;
+  filter:grayscale(1);
+}
+
 footer.app-footer{
   text-align:center;
   padding:30px 0 50px;
@@ -1704,12 +1710,10 @@ function preClasserOperations(ops){
 // RENDU - DASHBOARD PRINCIPAL
 // =========================================================
 
-const EUR = new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 const EUR_DEC = new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-function fmtEUR(n, decimals){
-  const v = decimals ? EUR_DEC.format(n) : EUR.format(Math.round(n));
-  return v + " €";
+function fmtEUR(n){
+  return EUR_DEC.format(n) + " €";
 }
 
 function fmtDateFr(isoDate){
@@ -2929,25 +2933,55 @@ function renderClassificationStep(){
 
   const montantClass = op.montant >= 0 ? "credit" : "debit";
   const numero = classificationDone + 1;
+  const isCredit = op.montant >= 0;
 
-  const sections = ["revenus","fixes","variables","epargne"];
+  // En mode groupé, vérifier si la sélection est homogène (tout crédit ou tout débit)
+  let groupMixte = false;
+  let groupToutCredit = false;
+  if(classificationMode === "group"){
+    const moisKey = STATE.moisActif;
+    const ops = (STATE.operations[moisKey]||[]);
+    const queueMontants = classificationQueue.map(id => (ops.find(o=>o.id===id)||{}).montant||0);
+    groupToutCredit = queueMontants.every(m => m >= 0);
+    const groupToutDebit = queueMontants.every(m => m < 0);
+    groupMixte = !groupToutCredit && !groupToutDebit;
+  }
+
+  // Sections affichées selon le sens de l'opération
+  // Crédit → Revenus uniquement
+  // Débit  → Fixes, Variables, Épargne uniquement
+  const allSections = ["revenus","fixes","variables","epargne"];
   const sectionTitles = {
     revenus: "t-revenus", fixes: "t-fixes", variables: "t-variables", epargne: "t-epargne"
   };
 
-  const catBlocks = sections.map(secKey => {
+  const sectionsActives = classificationMode === "group"
+    ? (groupMixte ? allSections : (groupToutCredit ? ["revenus"] : ["fixes","variables","epargne"]))
+    : (isCredit ? ["revenus"] : ["fixes","variables","epargne"]);
+
+  const catBlocks = allSections.map(secKey => {
     const sec = CATEGORIES[secKey];
+    const active = sectionsActives.includes(secKey);
     const stamps = sec.items.map(cat =>
-      `<button class="cat-stamp ${sectionTitles[secKey]}" data-cat="${escapeAttr(cat)}">${cat}</button>`
+      `<button class="cat-stamp ${sectionTitles[secKey]}${active?'':' cat-stamp--disabled'}"
+        data-cat="${escapeAttr(cat)}"
+        ${active?'':'disabled title="Non compatible avec le sens de cette opération"'}
+      >${cat}</button>`
     ).join("");
     return `
-      <div class="cat-section-title ${sectionTitles[secKey]}">${sec.label}</div>
-      <div class="cat-grid">${stamps}</div>
+      <div class="cat-section-title ${sectionTitles[secKey]}" style="${active?'':'opacity:0.35; filter:grayscale(1);'}">${sec.label}${active?'':' <span style="font-size:10px; font-weight:400; letter-spacing:0;">(non applicable)</span>'}</div>
+      <div class="cat-grid" style="${active?'':'opacity:0.35; pointer-events:none;'}">${stamps}</div>
     `;
   }).join("");
 
   const modeGroupLabel = classificationMode === "group" && classificationQueue.length > 1
     ? `<div style="font-size:12px; color:var(--terracotta); font-weight:600; margin-top:4px;">Cette catégorie sera appliquée à ${classificationQueue.length} opérations sélectionnées</div>`
+    : "";
+
+  const mixteBanner = groupMixte
+    ? `<div style="padding:8px 16px; background:var(--ambre-soft); border-bottom:1px solid var(--line); font-size:12.5px; color:var(--ambre); font-weight:600;">
+        ⚠️ Sélection mixte : crédits et débits mélangés. Toutes les catégories sont disponibles — vérifiez la cohérence de votre classement.
+       </div>`
     : "";
 
   overlay.innerHTML = `
@@ -2963,6 +2997,7 @@ function renderClassificationStep(){
         <button class="modal-close" id="closeClassifyBtn" aria-label="Fermer">✕</button>
       </div>
       <div class="modal-body">
+        ${mixteBanner}
         ${catBlocks}
       </div>
       <div class="modal-foot">
@@ -3229,7 +3264,7 @@ function ouvrirValidationPreclassificationMultiMois(items){
     overlay.querySelectorAll(".preclass-cat-pill").forEach(pill => {
       pill.addEventListener("click", () => {
         const idx = parseInt(pill.dataset.idx);
-        ouvrirChoixCategoriePour(idx, categoriesModifiees, pill, overlay);
+        ouvrirChoixCategoriePour(idx, categoriesModifiees, pill, overlay, items[idx]);
       });
     });
   }
@@ -3356,7 +3391,7 @@ function ouvrirGestionApprentissages(){
     showToast("Tous les apprentissages ont été effacés.");
   });
 }
-function ouvrirChoixCategoriePour(idx, categoriesModifiees, pillElement, parentOverlay){
+function ouvrirChoixCategoriePour(idx, categoriesModifiees, pillElement, parentOverlay, item){
   const existant = document.getElementById("miniCatPicker");
   if(existant) existant.remove();
 
@@ -3370,12 +3405,21 @@ function ouvrirChoixCategoriePour(idx, categoriesModifiees, pillElement, parentO
   const sections = ["revenus","fixes","variables","epargne"];
   const sectionTitles = { revenus:"t-revenus", fixes:"t-fixes", variables:"t-variables", epargne:"t-epargne" };
 
+  const isCredit = item && item.op && item.op.montant >= 0;
+  const sectionsActives = isCredit ? ["revenus"] : ["fixes","variables","epargne"];
+
   const catBlocks = sections.map(secKey => {
     const sec = CATEGORIES[secKey];
+    const active = sectionsActives.includes(secKey);
     const stamps = sec.items.map(cat =>
-      `<button class="cat-stamp ${sectionTitles[secKey]}" data-cat="${escapeAttr(cat)}" style="font-size:12px; padding:7px 10px;">${escapeHtml(cat)}</button>`
+      `<button class="cat-stamp ${sectionTitles[secKey]}${active?'':' cat-stamp--disabled'}"
+        data-cat="${escapeAttr(cat)}"
+        ${active?'':'disabled'}
+      >${escapeHtml(cat)}</button>`
     ).join("");
-    return `<div class="cat-section-title ${sectionTitles[secKey]}">${sec.label}</div><div class="cat-grid">${stamps}</div>`;
+    return `
+      <div class="cat-section-title ${sectionTitles[secKey]}" style="${active?'':'opacity:0.35; filter:grayscale(1);'}">${sec.label}</div>
+      <div class="cat-grid" style="${active?'':'opacity:0.35; pointer-events:none;'}">${stamps}</div>`;
   }).join("");
 
   picker.innerHTML = `
