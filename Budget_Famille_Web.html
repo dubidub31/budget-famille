@@ -1351,7 +1351,8 @@ function defaultState(){
     soldeCompte: {
       [moisKey]: { debut: null }
     },
-    notes: {},   // moisKey -> texte libre
+    notes: {},          // moisKey -> texte libre
+    commentaires: {},   // opId -> texte libre
     regles: {}
   };
 }
@@ -1919,6 +1920,14 @@ function renderHero(){
   `;
 }
 
+// État de tri par section : { revenus: {col, dir}, fixes: ..., variables: ..., epargne: ... }
+const sectionSort = {
+  revenus:   { col: "alpha", dir: "asc" },
+  fixes:     { col: "alpha", dir: "asc" },
+  variables: { col: "alpha", dir: "asc" },
+  epargne:   { col: "alpha", dir: "asc" }
+};
+
 function renderSectionCard(sectionKey){
   const section = CATEGORIES[sectionKey];
   const moisKey = STATE.moisActif;
@@ -1926,23 +1935,49 @@ function renderSectionCard(sectionKey){
   const prev = STATE.previsionnel[moisKey] || defaultPrevisionnel();
   const totalReal = totalSection(moisKey, sectionKey);
   const totalPrev = totalSectionPrevisionnel(moisKey, sectionKey);
+  const sort = sectionSort[sectionKey];
 
-  const rows = section.items.map(cat => {
-    const r = reals[cat] || 0;
-    const p = prev[cat] !== undefined ? prev[cat] : 0;
-    return `
+  // Construire les lignes triées
+  let items = section.items.map(cat => ({
+    cat,
+    r: reals[cat] || 0,
+    p: prev[cat] !== undefined ? prev[cat] : 0
+  }));
+
+  if(sort.col === "alpha"){
+    items.sort((a, b) => sort.dir === "asc"
+      ? a.cat.localeCompare(b.cat, 'fr')
+      : b.cat.localeCompare(a.cat, 'fr'));
+  } else if(sort.col === "montant"){
+    items.sort((a, b) => sort.dir === "asc" ? a.r - b.r : b.r - a.r);
+  }
+
+  const rows = items.map(({ cat, r, p }) => `
     <div class="cat-row">
       <span class="cat-name">${cat}</span>
       <input type="number" class="cat-prev-input" data-cat="${escapeAttr(cat)}" data-section="${sectionKey}" value="${p}" step="10" placeholder="0">
       <span class="cat-real ${r===0?'zero':''}">${fmtEUR(r)}</span>
-    </div>`;
-  }).join("");
+    </div>`).join("");
+
+  const sortBtn = (col, label) => {
+    const active = sort.col === col;
+    const arrow = active ? (sort.dir === "asc" ? " ▲" : " ▼") : "";
+    return `<button class="section-sort-btn${active?' active':''}" data-section="${sectionKey}" data-sort-col="${col}"
+      style="background:none; border:none; cursor:pointer; font-size:10px; font-weight:${active?700:500};
+      color:${active?'var(--ink)':'var(--ink-soft)'}; padding:2px 5px; border-radius:4px;
+      ${active?'background:rgba(0,0,0,0.06);':''}"
+    >${label}${arrow}</button>`;
+  };
 
   return `
   <div class="section-card section-${sectionKey}">
     <div class="section-head">
       <span class="tag">${section.label}</span>
       <div class="section-totals">
+        <div class="section-sort-btns" style="display:flex; gap:2px; margin-right:10px;">
+          ${sortBtn("alpha", "A→Z")}
+          ${sortBtn("montant", "Montant")}
+        </div>
         <span class="section-total-prev">Prévu ${fmtEUR(totalPrev)}</span>
         <span class="section-total-real display">${fmtEUR(totalReal)}</span>
       </div>
@@ -1982,7 +2017,8 @@ const OPS_COLUMNS = [
   { key: "carte", label: "Carte", sortable: true, filterable: true },
   { key: "sousCategorie", label: "Sous-catégorie", sortable: true, filterable: true },
   { key: "montant", label: "Montant", sortable: true, filterable: false, align: "right" },
-  { key: "categorie", label: "Catégorie", sortable: true, filterable: true }
+  { key: "categorie", label: "Catégorie", sortable: true, filterable: true },
+  { key: "commentaire", label: "Commentaire", sortable: false, filterable: false }
 ];
 
 function getOpValueForSort(op, col){
@@ -2079,6 +2115,7 @@ function renderOpsTable(){
     const montantClass = op.montant >= 0 ? "credit" : "debit";
     const catCell = renderCategorieCell(op);
     const isSelected = selectedOpIds.has(op.id);
+    const commentaire = (STATE.commentaires && STATE.commentaires[op.id]) || "";
     return `
     <tr data-op-row="${op.id}" class="${isSelected?'row-selected':''}">
       <td class="col-check"><input type="checkbox" class="op-checkbox" data-op-id="${op.id}" ${isSelected?'checked':''}></td>
@@ -2086,8 +2123,14 @@ function renderOpsTable(){
       <td class="libelle-cell">${libelleHtml}</td>
       <td>${op.carte ? escapeHtml(op.carte) : '<span class="muted">—</span>'}</td>
       <td>${op.sousCategorie ? escapeHtml(op.sousCategorie) : '<span class="muted">—</span>'}</td>
-      <td class="amount-cell ${montantClass}">${op.montant>=0?'+':''}${fmtEUR(op.montant,true)}</td>
+      <td class="amount-cell ${montantClass}">${op.montant>=0?'+':''}${fmtEUR(op.montant)}</td>
       <td>${catCell}</td>
+      <td class="commentaire-cell">
+        <input type="text" class="op-commentaire-input" data-op-id="${op.id}"
+          value="${escapeAttr(commentaire)}" placeholder="…"
+          style="width:100%; min-width:120px; border:1px solid transparent; background:transparent; font-size:12.5px;
+          color:var(--ink); font-family:inherit; outline:none; padding:3px 6px; border-radius:5px; box-sizing:border-box;">
+      </td>
     </tr>`;
   }).join("");
 
@@ -2337,6 +2380,20 @@ function attachDashboardEvents(){
   const btnClasserHero = document.getElementById("btnClasserHero");
   if(btnClasserHero) btnClasserHero.addEventListener("click", () => openClassificationModal());
 
+  document.querySelectorAll(".section-sort-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const sec = btn.dataset.section;
+      const col = btn.dataset.sortCol;
+      if(sectionSort[sec].col === col){
+        sectionSort[sec].dir = sectionSort[sec].dir === "asc" ? "desc" : "asc";
+      } else {
+        sectionSort[sec].col = col;
+        sectionSort[sec].dir = col === "montant" ? "desc" : "asc";
+      }
+      render();
+    });
+  });
+
   document.querySelectorAll(".cat-prev-input").forEach(input => {
     input.addEventListener("change", (e) => {
       const cat = e.target.dataset.cat;
@@ -2371,6 +2428,25 @@ function attachDashboardEvents(){
       }, 800);
     });
   }
+
+  // ---- Commentaires opérations (debounce 600ms) ----
+  let commentDebounceTimers = {};
+  document.querySelectorAll(".op-commentaire-input").forEach(input => {
+    // Bordure au focus
+    input.addEventListener("focus", () => { input.style.border = "1px solid var(--line)"; input.style.background = "var(--cream)"; });
+    input.addEventListener("blur",  () => { input.style.border = "1px solid transparent"; input.style.background = "transparent"; });
+    input.addEventListener("input", (e) => {
+      const opId = input.dataset.opId;
+      clearTimeout(commentDebounceTimers[opId]);
+      commentDebounceTimers[opId] = setTimeout(() => {
+        if(!STATE.commentaires) STATE.commentaires = {};
+        const val = e.target.value.trim();
+        if(val) STATE.commentaires[opId] = val;
+        else delete STATE.commentaires[opId];
+        saveState();
+      }, 600);
+    });
+  });
 
   // ---- Filtres rapides (chips) ----
   document.querySelectorAll(".chip[data-filter]").forEach(chip => {
@@ -2773,6 +2849,7 @@ function importerDonneesJSON(file){
       if(!STATE.soldeCompte) STATE.soldeCompte = {};
       if(!STATE.regles) STATE.regles = {};
       if(!STATE.notes) STATE.notes = {};
+      if(!STATE.commentaires) STATE.commentaires = {};
       // Compatibilité anciennes sauvegardes : nettoyer finManuel
       Object.keys(STATE.soldeCompte).forEach(k => {
         if(STATE.soldeCompte[k].finManuel !== undefined) delete STATE.soldeCompte[k].finManuel;
@@ -3743,39 +3820,95 @@ function renderSynthese(){
   </div>`;
 }
 
+// État de tri synthèse par section : { fixes: {col, dir}, variables: ..., epargne: ... }
+const syntheseSort = {
+  fixes:     { col: null, dir: "desc" },
+  variables: { col: null, dir: "desc" },
+  epargne:   { col: null, dir: "desc" }
+};
+
 function renderSyntheseSectionTable(sectionKey, moisRevolus){
   const section = CATEGORIES[sectionKey];
   const reals = moisRevolus.map(m => realParCategorie(m));
+  const sort = syntheseSort[sectionKey] || { col: null, dir: "desc" };
 
-  const rows = section.items.map(cat => {
+  // Construire les données par catégorie
+  let items = section.items.map(cat => {
     const valeurs = reals.map(r => r[cat] || 0);
     const moyenne = valeurs.reduce((s,v) => s+v, 0) / valeurs.length;
     const totalCat = valeurs.reduce((s,v) => s+v, 0);
-    if(totalCat === 0) return null; // n'affiche pas les catégories jamais utilisées
-    const cells = valeurs.map(v => `<td style="text-align:right;">${fmtEUR(v)}</td>`).join("");
-    return `<tr><td>${cat}</td>${cells}<td style="text-align:right; font-weight:600;">${fmtEUR(moyenne)}</td></tr>`;
-  }).filter(Boolean).join("");
+    return { cat, valeurs, moyenne, totalCat };
+  }).filter(item => item.totalCat > 0);
 
-  if(!rows){
-    return "";
+  if(!items.length) return "";
+
+  // Trier selon la colonne active
+  if(sort.col === "moyenne"){
+    items.sort((a,b) => sort.dir === "asc" ? a.moyenne - b.moyenne : b.moyenne - a.moyenne);
+  } else if(sort.col !== null){
+    // col est un index de mois (0, 1, 2...)
+    const idx = sort.col;
+    items.sort((a,b) => sort.dir === "asc"
+      ? (a.valeurs[idx]||0) - (b.valeurs[idx]||0)
+      : (b.valeurs[idx]||0) - (a.valeurs[idx]||0));
   }
 
+  const rows = items.map(({ cat, valeurs, moyenne }) => {
+    const cells = valeurs.map(v => `<td style="text-align:right; padding:8px 10px;">${fmtEUR(v)}</td>`).join("");
+    return `<tr>
+      <td style="padding:8px 14px;">${cat}</td>
+      ${cells}
+      <td style="text-align:right; font-weight:600; padding:8px 10px;">${fmtEUR(moyenne)}</td>
+    </tr>`;
+  }).join("");
+
   const totalRow = (() => {
-    const totauxParMois = moisRevolus.map((m,i) => totalSection(m, sectionKey));
+    const totauxParMois = moisRevolus.map(m => totalSection(m, sectionKey));
     const moyenneTotal = totauxParMois.reduce((s,v)=>s+v,0) / totauxParMois.length;
-    const cells = totauxParMois.map(v => `<td style="text-align:right;">${fmtEUR(v)}</td>`).join("");
-    return `<tr class="synthese-total-row"><td>Total ${section.label}</td>${cells}<td style="text-align:right;">${fmtEUR(moyenneTotal)}</td></tr>`;
+    const cells = totauxParMois.map(v => `<td style="text-align:right; padding:8px 10px;">${fmtEUR(v)}</td>`).join("");
+    return `<tr class="synthese-total-row">
+      <td style="padding:8px 14px;">Total ${section.label}</td>
+      ${cells}
+      <td style="text-align:right; font-weight:600; padding:8px 10px;">${fmtEUR(moyenneTotal)}</td>
+    </tr>`;
   })();
 
-  const headerCells = moisRevolus.map(m => `<th style="text-align:right;">${moisLabel(m).split(" ")[0].slice(0,3)}</th>`).join("");
+  // En-têtes cliquables avec indicateur de tri
+  const thStyle = `text-align:right; padding:8px 10px; cursor:pointer; user-select:none; white-space:nowrap;`;
+  const thActive = `background:var(--cream-deep);`;
+
+  const headerCells = moisRevolus.map((m, idx) => {
+    const isActive = sort.col === idx;
+    const arrow = isActive ? (sort.dir === "asc" ? " ▲" : " ▼") : "";
+    return `<th style="${thStyle}${isActive?thActive:''}"
+      data-synthese-sort-sec="${sectionKey}" data-synthese-sort-col="${idx}">
+      ${moisLabel(m).split(" ")[0].slice(0,3)}${arrow}
+    </th>`;
+  }).join("");
+
+  const isMoyActive = sort.col === "moyenne";
+  const moyArrow = isMoyActive ? (sort.dir === "asc" ? " ▲" : " ▼") : "";
+  const thMoyenne = `<th style="${thStyle}${isMoyActive?thActive:''}"
+    data-synthese-sort-sec="${sectionKey}" data-synthese-sort-col="moyenne">
+    Moyenne${moyArrow}
+  </th>`;
 
   return `
   <div class="ops-card" style="margin-bottom:22px;">
-    <div class="ops-head"><h3 class="ops-title display">${section.label}</h3></div>
-    <div class="ops-table-scroll">
-      <table class="ops-table synthese-table">
-        <thead><tr><th>Catégorie</th>${headerCells}<th style="text-align:right;">Moyenne</th></tr></thead>
-        <tbody>${rows}${totalRow}</tbody>
+    <div class="ops-head"><h3 class="ops-title display">${section.label}</h3>
+      <span style="font-size:11px; color:var(--ink-soft);">Cliquez sur un en-tête de colonne pour trier</span>
+    </div>
+    <div style="overflow-x:auto;">
+      <table style="width:100%; border-collapse:collapse;">
+        <thead>
+          <tr style="background:var(--cream-deep);">
+            <th style="text-align:left; padding:8px 14px;">Catégorie</th>
+            ${headerCells}
+            ${thMoyenne}
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+        <tfoot>${totalRow}</tfoot>
       </table>
     </div>
   </div>`;
@@ -3792,6 +3925,22 @@ function attachSyntheseEvents(){
   document.querySelectorAll("[data-synthese-section]").forEach(chip => {
     chip.addEventListener("click", (e) => {
       syntheseSectionActive = e.currentTarget.dataset.syntheseSection;
+      render();
+    });
+  });
+  // Tri des tableaux de synthèse
+  document.querySelectorAll("[data-synthese-sort-sec]").forEach(th => {
+    th.addEventListener("click", () => {
+      const sec = th.dataset.syntheseSortSec;
+      const col = th.dataset.syntheseSortCol;
+      const colParsed = col === "moyenne" ? "moyenne" : parseInt(col);
+      if(!syntheseSort[sec]) syntheseSort[sec] = { col: null, dir: "desc" };
+      if(syntheseSort[sec].col === colParsed){
+        syntheseSort[sec].dir = syntheseSort[sec].dir === "asc" ? "desc" : "asc";
+      } else {
+        syntheseSort[sec].col = colParsed;
+        syntheseSort[sec].dir = "desc";
+      }
       render();
     });
   });
@@ -3837,7 +3986,7 @@ function drawSyntheseChart(){
     options: {
       plugins: {
         legend: { position: "bottom", labels: { font: { family:"Inter", size: 12 }, padding: 14 } },
-        tooltip: { callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${fmtEUR(ctx.parsed.y)}` } }
+        tooltip: { callbacks: { label: (ctx) => " " + ctx.dataset.label + ": " + fmtEUR(ctx.parsed.y) } }
       },
       scales: {
         y: { ticks: { callback: (v) => fmtEUR(v), font: { family:"Inter", size: 11 } }, grid: { color:"#EFEAE0" } },
