@@ -1729,19 +1729,49 @@ function chercherRegle(libelle, montant){
   return meilleur;
 }
 
+// Correspondances sous-catégorie banque → catégorie app
+// Uniquement les cas où la sous-catégorie CSV est suffisamment précise
+const SOUCAT_VERS_CATEGORIE = {
+  "carburant": "Carburant"
+};
+
+function sousCatVersCategorie(sousCategorie, montant){
+  if(!sousCategorie) return null;
+  const s = sousCategorie.toLowerCase().trim();
+  for(const [fragment, cat] of Object.entries(SOUCAT_VERS_CATEGORIE)){
+    if(s.includes(fragment)){
+      const sec = categorieSection(cat);
+      const isCredit = montant >= 0;
+      if(isCredit ? sec === "revenus" : sec !== "revenus") return cat;
+    }
+  }
+  return null;
+}
+
 // Applique les règles mémorisées à une liste d'opérations.
-// Retourne { preClassees: [{op, categorie, score}], aClasser: [op] }
+// Priorité : 1) sous-catégorie CSV  2) règle mémorisée par libellé
+// Retourne { preClassees: [{op, categorie, score, source}], aClasser: [op] }
 function preClasserOperations(ops){
   const preClassees = [];
   const aClasser = [];
   ops.forEach(op => {
     if(op.categorie) return;
+
+    // 1. Correspondance directe via sous-catégorie du CSV
+    const catSousCat = sousCatVersCategorie(op.sousCategorie, op.montant);
+    if(catSousCat){
+      preClassees.push({ op, categorie: catSousCat, score: 5, source: "sousCat" });
+      return;
+    }
+
+    // 2. Règle mémorisée par libellé
     const regle = chercherRegle(op.libelle, op.montant);
     if(regle){
-      preClassees.push({ op, categorie: regle.categorie, score: regle.score });
-    } else {
-      aClasser.push(op);
+      preClassees.push({ op, categorie: regle.categorie, score: regle.score, source: "regle" });
+      return;
     }
+
+    aClasser.push(op);
   });
   return { preClassees, aClasser };
 }
@@ -3341,16 +3371,17 @@ function ouvrirValidationPreclassificationMultiMois(items){
     });
   }
 
-  function buildSortBtns(){
-    return [["date","Date"],["libelle","Libellé"],["confiance","Confiance"]].map(([key,label]) => {
-      const active = sortCol === key;
-      const arrow = active ? (sortDir === "asc" ? " ▲" : " ▼") : "";
-      return `<button class="preclass-sort-btn" data-sort="${key}"
-        style="background:${active?"var(--terracotta-soft)":"none"}; border:none; cursor:pointer;
-        font-size:11px; font-weight:${active?700:600}; color:${active?"var(--terracotta)":"var(--ink-soft)"};
-        text-transform:uppercase; letter-spacing:.04em; padding:4px 8px; border-radius:5px;">
-        ${label}${arrow}</button>`;
-    }).join("");
+  function buildThSort(key, label, extraStyle){
+    const active = sortCol === key;
+    const arrow = active ? (sortDir === "asc" ? " ▲" : " ▼") : " ⇅";
+    return `<th class="preclass-sort-btn" data-sort="${key}"
+      style="padding:8px 8px; font-size:11px; text-transform:uppercase; letter-spacing:.04em;
+      font-weight:${active?700:600}; color:${active?"var(--terracotta)":"var(--ink-soft)"};
+      cursor:pointer; user-select:none; white-space:nowrap;
+      background:${active?"var(--terracotta-soft)":"transparent"};
+      ${extraStyle||""}">
+      ${label}<span style="font-size:10px; margin-left:2px; opacity:${active?1:0.45};">${arrow}</span>
+    </th>`;
   }
 
   function buildLignes(){
@@ -3409,27 +3440,23 @@ function ouvrirValidationPreclassificationMultiMois(items){
         <button class="modal-close" id="closePreClassBtn" aria-label="Fermer">✕</button>
       </div>
       <div class="modal-body" style="padding:0;">
-        <div style="padding:10px 22px; background:var(--ambre-soft); border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+        <div style="padding:10px 22px; background:var(--ambre-soft); border-bottom:1px solid var(--line); display:flex; align-items:center; gap:8px;">
           <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:12.5px;">
             <input type="checkbox" id="chkPreclassAll" checked style="accent-color:var(--terracotta);">
             <span>Tout sélectionner / désélectionner</span>
           </label>
-          <div style="display:flex; align-items:center; gap:4px;">
-            <span style="font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); font-weight:600; margin-right:4px;">Trier par</span>
-            <span id="sortBtnsZone">${buildSortBtns()}</span>
-          </div>
         </div>
         <div style="overflow-y:auto; max-height:calc(90vh - 300px);">
           <table style="width:100%; border-collapse:collapse;">
-            <thead>
+            <thead id="preClassThead">
               <tr style="background:var(--cream-deep);">
                 <th style="padding:8px 14px; width:36px;"></th>
                 ${multiMois ? `<th style="padding:8px 8px; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); font-weight:600;">Mois</th>` : ""}
-                <th style="padding:8px 8px; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); font-weight:600;">Date</th>
-                <th style="padding:8px 8px; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); font-weight:600;">Libellé</th>
+                ${buildThSort("date","Date")}
+                ${buildThSort("libelle","Libellé")}
                 <th style="padding:8px 8px; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); font-weight:600; text-align:right;">Montant</th>
                 <th style="padding:8px 8px; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); font-weight:600;">Catégorie proposée <span style="font-weight:400; text-transform:none;">(cliquer pour changer)</span></th>
-                <th style="padding:8px 8px; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); font-weight:600;">Confiance</th>
+                ${buildThSort("confiance","Confiance")}
               </tr>
             </thead>
             <tbody id="preClassTableBody">${buildLignes()}</tbody>
@@ -3457,22 +3484,31 @@ function ouvrirValidationPreclassificationMultiMois(items){
       overlay.querySelectorAll(".preclass-chk").forEach(cb => { cb.checked = e.target.checked; });
     });
 
-    // Boutons de tri
-    overlay.querySelectorAll(".preclass-sort-btn").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const col = btn.dataset.sort;
-        if(sortCol === col) sortDir = sortDir === "asc" ? "desc" : "asc";
-        else { sortCol = col; sortDir = col === "confiance" ? "desc" : "asc"; }
-        overlay.querySelector("#sortBtnsZone").innerHTML = buildSortBtns();
-        overlay.querySelector("#preClassTableBody").innerHTML = buildLignes();
-        bindRowEvents();
-        // Rebind tri (les boutons ont été recréés)
-        overlay.querySelectorAll(".preclass-sort-btn").forEach(b => {
-          b.addEventListener("click", () => b.click());
+    // Boutons de tri (en-têtes de colonnes)
+    function bindTri(){
+      overlay.querySelectorAll(".preclass-sort-btn").forEach(th => {
+        th.addEventListener("click", () => {
+          const col = th.dataset.sort;
+          if(sortCol === col) sortDir = sortDir === "asc" ? "desc" : "asc";
+          else { sortCol = col; sortDir = col === "confiance" ? "desc" : "asc"; }
+          // Reconstruire uniquement le thead et le tbody
+          overlay.querySelector("#preClassThead").innerHTML = `
+            <tr style="background:var(--cream-deep);">
+              <th style="padding:8px 14px; width:36px;"></th>
+              ${multiMois ? `<th style="padding:8px 8px; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); font-weight:600;">Mois</th>` : ""}
+              ${buildThSort("date","Date")}
+              ${buildThSort("libelle","Libellé")}
+              <th style="padding:8px 8px; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); font-weight:600; text-align:right;">Montant</th>
+              <th style="padding:8px 8px; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); font-weight:600;">Catégorie proposée <span style="font-weight:400; text-transform:none;">(cliquer pour changer)</span></th>
+              ${buildThSort("confiance","Confiance")}
+            </tr>`;
+          overlay.querySelector("#preClassTableBody").innerHTML = buildLignes();
+          bindTri();
+          bindRowEvents();
         });
-        bindAll_tri();
       });
-    });
+    }
+    bindTri();
 
     overlay.querySelector("#btnPreclassIgnorer").addEventListener("click", () => { overlay.remove(); openClassificationModal(); });
 
@@ -3502,19 +3538,7 @@ function ouvrirValidationPreclassificationMultiMois(items){
     bindRowEvents();
   }
 
-  function bindAll_tri(){
-    overlay.querySelectorAll(".preclass-sort-btn").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const col = btn.dataset.sort;
-        if(sortCol === col) sortDir = sortDir === "asc" ? "desc" : "asc";
-        else { sortCol = col; sortDir = col === "confiance" ? "desc" : "asc"; }
-        overlay.querySelector("#sortBtnsZone").innerHTML = buildSortBtns();
-        overlay.querySelector("#preClassTableBody").innerHTML = buildLignes();
-        bindRowEvents();
-        bindAll_tri();
-      });
-    });
-  }
+
 
   function bindRowEvents(){
     overlay.querySelectorAll(".preclass-cat-pill").forEach(pill => {
