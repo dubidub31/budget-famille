@@ -2284,8 +2284,13 @@ function renderOpsTable(){
     if(openFilterMenu === col.key){
       if(col.key === "libelle"){
         const currentVal = opsColumnFilters[col.key] || "";
+        const allLibelleValues = uniqueColumnValues(allOps, "libelle");
+        const filteredLibelles = currentVal ? allLibelleValues.filter(v => String(v).toLowerCase().includes(currentVal.toLowerCase())) : allLibelleValues;
+        const libelleItems = filteredLibelles.map(v =>
+          `<div class="filter-menu-item ${opsColumnFilters["libelle"]===v?'active':''}" data-filter-col="libelle" data-filter-val="${escapeAttr(v)}">${escapeHtml(String(v))}</div>`
+        ).join("");
         filterMenuHtml = `
-          <div class="filter-menu filter-menu-libelle" data-filter-menu="${col.key}" style="min-width:240px; position:fixed; z-index:200;">
+          <div class="filter-menu filter-menu-libelle" data-filter-menu="${col.key}" style="min-width:280px; position:fixed; z-index:200;">
             <div style="padding:8px 10px;">
               <input type="text" id="filterLibelleInput" class="filter-text-input"
                 value="${escapeAttr(currentVal)}"
@@ -2294,9 +2299,28 @@ function renderOpsTable(){
                 style="width:100%; border:1px solid var(--line); border-radius:6px; padding:6px 9px;
                 font-size:13px; font-family:inherit; background:var(--cream); box-sizing:border-box;">
             </div>
-            <div class="filter-menu-item filter-menu-clear" data-filter-col="${col.key}" data-filter-val="__ALL__">
-              Effacer le filtre
+            <div class="filter-menu-item filter-menu-clear" data-filter-col="libelle" data-filter-val="__ALL__">Tous les libellés</div>
+            <div id="filterLibelleList">${libelleItems}</div>
+          </div>`;
+      } else if(col.key === "categorie"){
+        const currentVal = opsColumnFilters[col.key] || "";
+        const allCatValues = uniqueColumnValues(allOps, "categorie");
+        const filteredCats = currentVal ? allCatValues.filter(v => String(v).toLowerCase().startsWith(currentVal.toLowerCase())) : allCatValues;
+        const catItems = filteredCats.map(v =>
+          `<div class="filter-menu-item ${opsColumnFilters["categorie"]===v?'active':''}" data-filter-col="categorie" data-filter-val="${escapeAttr(v)}">${escapeHtml(String(v))}</div>`
+        ).join("");
+        filterMenuHtml = `
+          <div class="filter-menu filter-menu-categorie" data-filter-menu="${col.key}" style="min-width:280px; position:fixed; z-index:200;">
+            <div style="padding:8px 10px;">
+              <input type="text" id="filterCategorieInput" class="filter-text-input"
+                value="${escapeAttr(currentVal)}"
+                placeholder="Filtrer les catégories…"
+                autofocus
+                style="width:100%; border:1px solid var(--line); border-radius:6px; padding:6px 9px;
+                font-size:13px; font-family:inherit; background:var(--cream); box-sizing:border-box;">
             </div>
+            <div class="filter-menu-item filter-menu-clear" data-filter-col="categorie" data-filter-val="__ALL__">Toutes les catégories</div>
+            <div id="filterCategorieList">${catItems}</div>
           </div>`;
       } else {
         const values = uniqueColumnValues(allOps, col.key);
@@ -2646,7 +2670,7 @@ function attachDashboardEvents(){
     });
   });
 
-  // Filtre texte libre sur le libellé — mise à jour partielle sans re-render global
+  // Filtre texte sur le libellé — filtre la liste déroulante en temps réel
   const filterLibelleInput = document.getElementById("filterLibelleInput");
   if(filterLibelleInput){
     const filterBtn = document.querySelector('.th-filter-btn[data-filter-toggle="libelle"]');
@@ -2662,18 +2686,28 @@ function attachDashboardEvents(){
 
     filterLibelleInput.addEventListener("input", (e) => {
       e.stopPropagation();
-      // Sauvegarder le scroll AVANT toute modification DOM
-      const sy = window.scrollY;
-      const val = e.target.value;
-      if(val.trim()) opsColumnFilters["libelle"] = val.trim();
-      else delete opsColumnFilters["libelle"];
-      renderOpsTablePartial();
-      // Restaurer immédiatement et après layout
-      window.scrollTo(0, sy);
-      requestAnimationFrame(() => {
-        window.scrollTo(0, sy);
-        document.getElementById("filterLibelleInput")?.focus();
-      });
+      const q = e.target.value.toLowerCase();
+      const allLibelleValues = uniqueColumnValues(
+        Object.values(STATE.operations).flat(),
+        "libelle"
+      );
+      const filteredLibelles = q ? allLibelleValues.filter(v => String(v).toLowerCase().includes(q)) : allLibelleValues;
+      const listEl = document.getElementById("filterLibelleList");
+      if(listEl){
+        listEl.innerHTML = filteredLibelles.map(v =>
+          `<div class="filter-menu-item ${opsColumnFilters["libelle"]===v?'active':''}" data-filter-col="libelle" data-filter-val="${escapeAttr(v)}">${escapeHtml(String(v))}</div>`
+        ).join("");
+        listEl.querySelectorAll(".filter-menu-item").forEach(item => {
+          item.addEventListener("click", (ev) => {
+            ev.stopPropagation();
+            const val = item.dataset.filterVal;
+            if(val === "__ALL__") delete opsColumnFilters["libelle"];
+            else opsColumnFilters["libelle"] = val;
+            openFilterMenu = null;
+            render();
+          });
+        });
+      }
     });
     filterLibelleInput.addEventListener("keydown", (e) => {
       if(e.key === "Escape"){ openFilterMenu = null; render(); }
@@ -2682,6 +2716,55 @@ function attachDashboardEvents(){
     });
     filterLibelleInput.addEventListener("click", (e) => e.stopPropagation());
   }
+  // Filtre texte sur la catégorie — saisie qui filtre la liste déroulante en temps réel
+  const filterCategorieInput = document.getElementById("filterCategorieInput");
+  if(filterCategorieInput){
+    const filterBtn = document.querySelector('.th-filter-btn[data-filter-toggle="categorie"]');
+    const menu = document.querySelector(".filter-menu-categorie");
+    if(filterBtn && menu){
+      const rect = filterBtn.getBoundingClientRect();
+      menu.style.top = (rect.bottom + 4) + "px";
+      menu.style.left = rect.left + "px";
+    }
+    filterCategorieInput.focus();
+    const len = filterCategorieInput.value.length;
+    filterCategorieInput.setSelectionRange(len, len);
+
+    filterCategorieInput.addEventListener("input", (e) => {
+      e.stopPropagation();
+      const q = e.target.value.toLowerCase();
+      // Reconstruire uniquement la liste d'items sans re-render global
+      const allCatValues = uniqueColumnValues(
+        Object.values(STATE.operations).flat(),
+        "categorie"
+      );
+      const filteredCats = q ? allCatValues.filter(v => String(v).toLowerCase().startsWith(q)) : allCatValues;
+      const listEl = document.getElementById("filterCategorieList");
+      if(listEl){
+        listEl.innerHTML = filteredCats.map(v =>
+          `<div class="filter-menu-item ${opsColumnFilters["categorie"]===v?'active':''}" data-filter-col="categorie" data-filter-val="${escapeAttr(v)}">${escapeHtml(String(v))}</div>`
+        ).join("");
+        // Rebind les clics sur les nouveaux items
+        listEl.querySelectorAll(".filter-menu-item").forEach(item => {
+          item.addEventListener("click", (ev) => {
+            ev.stopPropagation();
+            const val = item.dataset.filterVal;
+            if(val === "__ALL__") delete opsColumnFilters["categorie"];
+            else opsColumnFilters["categorie"] = val;
+            openFilterMenu = null;
+            render();
+          });
+        });
+      }
+    });
+    filterCategorieInput.addEventListener("keydown", (e) => {
+      if(e.key === "Escape"){ openFilterMenu = null; render(); }
+      if(e.key === "Enter"){ openFilterMenu = null; render(); }
+      e.stopPropagation();
+    });
+    filterCategorieInput.addEventListener("click", (e) => e.stopPropagation());
+  }
+
   document.querySelectorAll(".filter-menu").forEach(menu => {
     menu.addEventListener("click", (e) => e.stopPropagation());
   });
@@ -3363,8 +3446,10 @@ function ouvrirValidationPreclassificationMultiMois(items){
   function getSorted(){
     return [...items].sort((a, b) => {
       let va, vb;
-      if(sortCol === "date")       { va = a.op.date; vb = b.op.date; }
+      if(sortCol === "date")        { va = a.op.date; vb = b.op.date; }
       else if(sortCol === "libelle")  { va = (a.op.libelle||"").toLowerCase(); vb = (b.op.libelle||"").toLowerCase(); }
+      else if(sortCol === "montant")  { va = a.op.montant||0; vb = b.op.montant||0; }
+      else if(sortCol === "categorie"){ va = (a.categorie||"").toLowerCase(); vb = (b.categorie||"").toLowerCase(); }
       else if(sortCol === "confiance"){ va = a.score||0; vb = b.score||0; }
       const cmp = va < vb ? -1 : va > vb ? 1 : 0;
       return sortDir === "asc" ? cmp : -cmp;
@@ -3454,8 +3539,8 @@ function ouvrirValidationPreclassificationMultiMois(items){
                 ${multiMois ? `<th style="padding:8px 8px; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); font-weight:600;">Mois</th>` : ""}
                 ${buildThSort("date","Date")}
                 ${buildThSort("libelle","Libellé")}
-                <th style="padding:8px 8px; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); font-weight:600; text-align:right;">Montant</th>
-                <th style="padding:8px 8px; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); font-weight:600;">Catégorie proposée <span style="font-weight:400; text-transform:none;">(cliquer pour changer)</span></th>
+                ${buildThSort("montant","Montant","text-align:right;")}
+                ${buildThSort("categorie","Catégorie proposée")}
                 ${buildThSort("confiance","Confiance")}
               </tr>
             </thead>
@@ -3498,8 +3583,8 @@ function ouvrirValidationPreclassificationMultiMois(items){
               ${multiMois ? `<th style="padding:8px 8px; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); font-weight:600;">Mois</th>` : ""}
               ${buildThSort("date","Date")}
               ${buildThSort("libelle","Libellé")}
-              <th style="padding:8px 8px; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); font-weight:600; text-align:right;">Montant</th>
-              <th style="padding:8px 8px; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); font-weight:600;">Catégorie proposée <span style="font-weight:400; text-transform:none;">(cliquer pour changer)</span></th>
+              ${buildThSort("montant","Montant","text-align:right;")}
+              ${buildThSort("categorie","Catégorie proposée")}
               ${buildThSort("confiance","Confiance")}
             </tr>`;
           overlay.querySelector("#preClassTableBody").innerHTML = buildLignes();
