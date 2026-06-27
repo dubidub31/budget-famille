@@ -289,6 +289,11 @@ body{
 }
 .cat-row:hover{background:var(--cream-deep);}
 .cat-name{font-size:13.5px; color:var(--ink);}
+.cat-name--link{
+  cursor:pointer;
+  transition:color .12s;
+}
+.cat-name--link:hover{ color:var(--sage-dark); }
 .cat-prev-input{
   width:78px; text-align:right;
   border:1px solid var(--line); border-radius:7px; padding:5px 7px;
@@ -1856,7 +1861,7 @@ function renderSectionCard(sectionKey){
 
   const rows = items.map(({ cat, r, p }) => `
     <div class="cat-row">
-      <span class="cat-name">${cat}</span>
+      <span class="cat-name cat-name--link" data-filter-cat="${escapeAttr(cat)}" title="Filtrer les opérations par cette catégorie">${cat}</span>
       <input type="number" class="cat-prev-input" data-cat="${escapeAttr(cat)}" data-section="${sectionKey}" value="${p}" step="10" placeholder="0">
       <span class="cat-real ${r===0?'zero':''}">${fmtEUR(r)}</span>
     </div>`).join("");
@@ -1973,13 +1978,24 @@ function renderOpsTablePartial(){
   if(opsQuickFilter === "aClasser") ops = ops.filter(o => !o.categorie);
   if(opsQuickFilter === "classees") ops = ops.filter(o => o.categorie);
   Object.entries(opsColumnFilters).forEach(([col, val]) => {
+    if(col.endsWith("__search")) return;
     ops = ops.filter(o => {
-      if(col === "libelle") return normalizeStr(o.libelle || "").includes(normalizeStr(val));
+      if(col === "libelle"){
+        if(val instanceof Set){
+          const norm = normalizeStr(o.libelle || "");
+          return val.size === 0 || [...val].some(s => normalizeStr(s) === norm);
+        }
+        return normalizeStr(o.libelle || "").includes(normalizeStr(val));
+      }
       let v;
       if(col === "carte") v = o.carte || "—";
       else if(col === "sousCategorie") v = o.sousCategorie || "—";
       else if(col === "categorie") v = o.categorie || "À classer";
       else v = o[col];
+      if(val instanceof Set){
+        const norm = normalizeStr(String(v));
+        return val.size === 0 || [...val].some(s => normalizeStr(s) === norm);
+      }
       return String(v) === String(val);
     });
   });
@@ -2053,9 +2069,13 @@ function renderOpsTable(){
 
   // Filtres par colonne
   Object.entries(opsColumnFilters).forEach(([col, val]) => {
+    if(col.endsWith("__search")) return;
     ops = ops.filter(o => {
-      // Libellé : recherche partielle insensible à la casse
       if(col === "libelle"){
+        if(val instanceof Set){
+          const norm = normalizeStr(o.libelle || "");
+          return val.size === 0 || [...val].some(s => normalizeStr(s) === norm);
+        }
         return normalizeStr(o.libelle || "").includes(normalizeStr(val));
       }
       let v;
@@ -2063,6 +2083,10 @@ function renderOpsTable(){
       else if(col === "sousCategorie") v = o.sousCategorie || "—";
       else if(col === "categorie") v = o.categorie || "À classer";
       else v = o[col];
+      if(val instanceof Set){
+        const norm = normalizeStr(String(v));
+        return val.size === 0 || [...val].some(s => normalizeStr(s) === norm);
+      }
       return String(v) === String(val);
     });
   });
@@ -2123,51 +2147,48 @@ function renderOpsTable(){
   const headerCells = checkboxHeader + OPS_COLUMNS.map(col => {
     const isSorted = opsSortColumn === col.key;
     const arrow = isSorted ? (opsSortDir === "asc" ? " ▲" : " ▼") : "";
-    const hasFilter = opsColumnFilters.hasOwnProperty(col.key);
+    const filterVal = opsColumnFilters[col.key];
+    const hasFilter = filterVal instanceof Set ? filterVal.size > 0 : opsColumnFilters.hasOwnProperty(col.key);
     const filterDot = hasFilter ? '<span class="filter-dot"></span>' : "";
     const alignStyle = col.align === "right" ? ' style="text-align:right"' : "";
 
     let filterMenuHtml = "";
     if(openFilterMenu === col.key){
-      if(col.key === "libelle"){
-        const currentVal = opsColumnFilters[col.key] || "";
-        const allLibelleValues = uniqueColumnValues(allOps, "libelle");
-        const filteredLibelles = currentVal ? allLibelleValues.filter(v => normalizeStr(v).includes(normalizeStr(currentVal))) : allLibelleValues;
-        const libelleItems = filteredLibelles.map(v =>
-          `<div class="filter-menu-item ${opsColumnFilters["libelle"]===v?'active':''}" data-filter-col="libelle" data-filter-val="${escapeAttr(v)}">${escapeHtml(String(v))}</div>`
-        ).join("");
-        filterMenuHtml = `
-          <div class="filter-menu filter-menu-libelle" data-filter-menu="${col.key}" style="min-width:280px; position:fixed; z-index:200;">
-            <div style="padding:8px 10px;">
-              <input type="text" id="filterLibelleInput" class="filter-text-input"
-                value="${escapeAttr(currentVal)}"
-                placeholder="Rechercher un libellé…"
-                autofocus
-                style="width:100%; border:1px solid var(--line); border-radius:6px; padding:6px 9px;
-                font-size:13px; font-family:inherit; background:var(--cream); box-sizing:border-box;">
-            </div>
-            <div class="filter-menu-item filter-menu-clear" data-filter-col="libelle" data-filter-val="__ALL__">Tous les libellés</div>
-            <div id="filterLibelleList">${libelleItems}</div>
+      if(col.key === "libelle" || col.key === "categorie"){
+        const isLib = col.key === "libelle";
+        const searchId = isLib ? "filterLibelleInput" : "filterCategorieInput";
+        const listId   = isLib ? "filterLibelleList"  : "filterCategorieList";
+        const menuCls  = isLib ? "filter-menu-libelle" : "filter-menu-categorie";
+        const placeholder = isLib ? "Rechercher un libellé…" : "Filtrer les catégories…";
+        const clearLabel  = isLib ? "Tout désélectionner" : "Tout désélectionner";
+        const currentSet  = opsColumnFilters[col.key] instanceof Set ? opsColumnFilters[col.key] : new Set();
+        const searchVal   = opsColumnFilters[col.key + "__search"] || "";
+        const allValues   = uniqueColumnValues(allOps, col.key);
+        const filtered    = searchVal ? allValues.filter(v => normalizeStr(v).includes(normalizeStr(searchVal))) : allValues;
+        const itemsHtml   = filtered.map(v => {
+          const checked = currentSet.has(v) ? "checked" : "";
+          return `<div class="filter-menu-item filter-check-row" data-filter-val="${escapeAttr(v)}" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+            <input type="checkbox" class="filter-check" ${checked} style="accent-color:var(--sage-dark);width:14px;height:14px;flex-shrink:0;pointer-events:none;">
+            <span>${escapeHtml(String(v))}</span>
           </div>`;
-      } else if(col.key === "categorie"){
-        const currentVal = opsColumnFilters[col.key] || "";
-        const allCatValues = uniqueColumnValues(allOps, "categorie");
-        const filteredCats = currentVal ? allCatValues.filter(v => normalizeStr(v).includes(normalizeStr(currentVal))) : allCatValues;
-        const catItems = filteredCats.map(v =>
-          `<div class="filter-menu-item ${opsColumnFilters["categorie"]===v?'active':''}" data-filter-col="categorie" data-filter-val="${escapeAttr(v)}">${escapeHtml(String(v))}</div>`
-        ).join("");
+        }).join("");
+        const hasSelection = currentSet.size > 0;
         filterMenuHtml = `
-          <div class="filter-menu filter-menu-categorie" data-filter-menu="${col.key}" style="min-width:280px; position:fixed; z-index:200;">
-            <div style="padding:8px 10px;">
-              <input type="text" id="filterCategorieInput" class="filter-text-input"
-                value="${escapeAttr(currentVal)}"
-                placeholder="Filtrer les catégories…"
+          <div class="filter-menu ${menuCls}" data-filter-menu="${col.key}" style="min-width:300px; position:fixed; z-index:200;">
+            <div style="padding:8px 10px 6px;">
+              <input type="text" id="${searchId}" class="filter-text-input"
+                value="${escapeAttr(searchVal)}"
+                placeholder="${placeholder}"
                 autofocus
                 style="width:100%; border:1px solid var(--line); border-radius:6px; padding:6px 9px;
                 font-size:13px; font-family:inherit; background:var(--cream); box-sizing:border-box;">
             </div>
-            <div class="filter-menu-item filter-menu-clear" data-filter-col="categorie" data-filter-val="__ALL__">Toutes les catégories</div>
-            <div id="filterCategorieList">${catItems}</div>
+            ${hasSelection ? `<div style="padding:4px 10px 6px; display:flex; align-items:center; justify-content:space-between;">
+              <span style="font-size:11px;color:var(--sage-dark);font-weight:600;">${currentSet.size} sélectionnée${currentSet.size>1?'s':''}</span>
+              <span class="filter-menu-clear-inline" data-filter-col="${col.key}" style="font-size:11px;color:var(--ink-muted);cursor:pointer;text-decoration:underline;">Effacer</span>
+            </div>` : ""}
+            <div class="filter-menu-item filter-menu-clear" data-filter-col="${col.key}" data-filter-val="__ALL__" style="border-bottom:1px solid var(--line);">Toutes les valeurs</div>
+            <div id="${listId}">${itemsHtml}</div>
           </div>`;
       } else {
         const values = uniqueColumnValues(allOps, col.key);
@@ -2190,7 +2211,10 @@ function renderOpsTable(){
     </th>`;
   }).join("");
 
-  const filtreActifCount = Object.keys(opsColumnFilters).length;
+  const filtreActifCount = Object.entries(opsColumnFilters).filter(([k,v]) => {
+    if(k.endsWith("__search")) return false;
+    return v instanceof Set ? v.size > 0 : true;
+  }).length;
   const clearFiltersBtn = filtreActifCount > 0
     ? `<button class="btn btn-ghost btn-sm" id="btnClearColumnFilters">Effacer les filtres (${filtreActifCount})</button>`
     : "";
@@ -2218,7 +2242,7 @@ function renderOpsTable(){
         <span class="chip ${opsQuickFilter==='aClasser'?'active':''}" data-filter="aClasser">À classer (${aClasser})</span>
         <span class="chip ${opsQuickFilter==='classees'?'active':''}" data-filter="classees">Classées (${total-aClasser})</span>
         ${clearFiltersBtn}
-        <button class="btn btn-ghost btn-sm" id="btnResetMois" title="Remettre toutes les opérations à l'état à classer">↺ Reset classement</button>
+        <button class="btn btn-ghost btn-sm" id="btnResetMois" title="Remettre à classer les opérations sélectionnées">↺ Reset catégorie</button>
       </div>
     </div>
     ${selectionBar}
@@ -2419,6 +2443,24 @@ function attachDashboardEvents(){
     });
   });
 
+  // Clic sur une catégorie → filtre dans le tableau opérations
+  document.querySelectorAll(".cat-name--link").forEach(el => {
+    el.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const cat = el.dataset.filterCat;
+      const set = new Set([cat]);
+      opsColumnFilters["categorie"] = set;
+      delete opsColumnFilters["categorie__search"];
+      openFilterMenu = null;
+      render();
+      // Scroll vers le tableau opérations
+      requestAnimationFrame(() => {
+        const opsCard = document.querySelector(".ops-card");
+        if(opsCard) opsCard.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+  });
+
   document.querySelectorAll(".cat-prev-input").forEach(input => {
     input.addEventListener("change", (e) => {
       const cat = e.target.dataset.cat;
@@ -2509,6 +2551,7 @@ function attachDashboardEvents(){
     el.addEventListener("click", (e) => {
       e.stopPropagation();
       const col = e.currentTarget.dataset.filterCol;
+      if(col === "libelle" || col === "categorie") return; // géré par bindMultiFilterMenu
       const val = e.currentTarget.dataset.filterVal;
       if(val === "__ALL__") delete opsColumnFilters[col];
       else opsColumnFilters[col] = val;
@@ -2517,100 +2560,107 @@ function attachDashboardEvents(){
     });
   });
 
-  // Filtre texte sur le libellé — filtre la liste déroulante en temps réel
-  const filterLibelleInput = document.getElementById("filterLibelleInput");
-  if(filterLibelleInput){
-    const filterBtn = document.querySelector('.th-filter-btn[data-filter-toggle="libelle"]');
-    const menu = document.querySelector(".filter-menu-libelle");
+  // Handler unifié pour libellé et catégorie : checkboxes multi-sélection + saisie texte
+  function bindMultiFilterMenu(col){
+    const searchId = col === "libelle" ? "filterLibelleInput" : "filterCategorieInput";
+    const listId   = col === "libelle" ? "filterLibelleList"  : "filterCategorieList";
+    const menuCls  = col === "libelle" ? ".filter-menu-libelle" : ".filter-menu-categorie";
+
+    const input = document.getElementById(searchId);
+    const menu  = document.querySelector(menuCls);
+    if(!input) return;
+
+    // Positionner le menu
+    const filterBtn = document.querySelector(`.th-filter-btn[data-filter-toggle="${col}"]`);
     if(filterBtn && menu){
       const rect = filterBtn.getBoundingClientRect();
-      menu.style.top = (rect.bottom + 4) + "px";
+      menu.style.top  = (rect.bottom + 4) + "px";
       menu.style.left = rect.left + "px";
     }
-    filterLibelleInput.focus();
-    const len = filterLibelleInput.value.length;
-    filterLibelleInput.setSelectionRange(len, len);
+    input.focus();
+    const len = input.value.length;
+    input.setSelectionRange(len, len);
 
-    filterLibelleInput.addEventListener("input", (e) => {
-      e.stopPropagation();
-      const q = normalizeStr(e.target.value);
-      const allLibelleValues = uniqueColumnValues(
-        Object.values(STATE.operations).flat(),
-        "libelle"
-      );
-      const filteredLibelles = q ? allLibelleValues.filter(v => normalizeStr(v).includes(q)) : allLibelleValues;
-      const listEl = document.getElementById("filterLibelleList");
-      if(listEl){
-        listEl.innerHTML = filteredLibelles.map(v =>
-          `<div class="filter-menu-item ${opsColumnFilters["libelle"]===v?'active':''}" data-filter-col="libelle" data-filter-val="${escapeAttr(v)}">${escapeHtml(String(v))}</div>`
-        ).join("");
-        listEl.querySelectorAll(".filter-menu-item").forEach(item => {
-          item.addEventListener("click", (ev) => {
-            ev.stopPropagation();
-            const val = item.dataset.filterVal;
-            if(val === "__ALL__") delete opsColumnFilters["libelle"];
-            else opsColumnFilters["libelle"] = val;
-            openFilterMenu = null;
-            render();
-          });
-        });
-      }
-    });
-    filterLibelleInput.addEventListener("keydown", (e) => {
-      if(e.key === "Escape"){ openFilterMenu = null; render(); }
-      if(e.key === "Enter"){ openFilterMenu = null; render(); }
-      e.stopPropagation();
-    });
-    filterLibelleInput.addEventListener("click", (e) => e.stopPropagation());
-  }
-  // Filtre texte sur la catégorie — saisie qui filtre la liste déroulante en temps réel
-  const filterCategorieInput = document.getElementById("filterCategorieInput");
-  if(filterCategorieInput){
-    const filterBtn = document.querySelector('.th-filter-btn[data-filter-toggle="categorie"]');
-    const menu = document.querySelector(".filter-menu-categorie");
-    if(filterBtn && menu){
-      const rect = filterBtn.getBoundingClientRect();
-      menu.style.top = (rect.bottom + 4) + "px";
-      menu.style.left = rect.left + "px";
+    function rebuildList(q){
+      const allValues = uniqueColumnValues(STATE.operations[STATE.moisActif] || [], col);
+      const filtered  = q ? allValues.filter(v => normalizeStr(v).includes(normalizeStr(q))) : allValues;
+      const currentSet = opsColumnFilters[col] instanceof Set ? opsColumnFilters[col] : new Set();
+      const listEl = document.getElementById(listId);
+      if(!listEl) return;
+      listEl.innerHTML = filtered.map(v => {
+        const checked = currentSet.has(v) ? "checked" : "";
+        return `<div class="filter-menu-item filter-check-row" data-filter-val="${escapeAttr(v)}" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <input type="checkbox" class="filter-check" ${checked} style="accent-color:var(--sage-dark);width:14px;height:14px;flex-shrink:0;pointer-events:none;">
+          <span>${escapeHtml(String(v))}</span>
+        </div>`;
+      }).join("");
+      bindCheckboxes();
     }
-    filterCategorieInput.focus();
-    const len = filterCategorieInput.value.length;
-    filterCategorieInput.setSelectionRange(len, len);
 
-    filterCategorieInput.addEventListener("input", (e) => {
-      e.stopPropagation();
-      const q = normalizeStr(e.target.value);
-      // Reconstruire uniquement la liste d'items sans re-render global
-      const allCatValues = uniqueColumnValues(
-        Object.values(STATE.operations).flat(),
-        "categorie"
-      );
-      const filteredCats = q ? allCatValues.filter(v => normalizeStr(v).includes(q)) : allCatValues;
-      const listEl = document.getElementById("filterCategorieList");
-      if(listEl){
-        listEl.innerHTML = filteredCats.map(v =>
-          `<div class="filter-menu-item ${opsColumnFilters["categorie"]===v?'active':''}" data-filter-col="categorie" data-filter-val="${escapeAttr(v)}">${escapeHtml(String(v))}</div>`
-        ).join("");
-        // Rebind les clics sur les nouveaux items
-        listEl.querySelectorAll(".filter-menu-item").forEach(item => {
-          item.addEventListener("click", (ev) => {
-            ev.stopPropagation();
-            const val = item.dataset.filterVal;
-            if(val === "__ALL__") delete opsColumnFilters["categorie"];
-            else opsColumnFilters["categorie"] = val;
-            openFilterMenu = null;
-            render();
-          });
+    function bindCheckboxes(){
+      const listEl = document.getElementById(listId);
+      if(!listEl) return;
+      listEl.querySelectorAll(".filter-check-row").forEach(row => {
+        row.addEventListener("click", (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          const v  = row.dataset.filterVal;
+          const cb = row.querySelector("input[type=checkbox]");
+          const set = opsColumnFilters[col] instanceof Set ? opsColumnFilters[col] : new Set();
+          // cb.checked reflète l'état AVANT le clic (pointer-events:none sur la checkbox)
+          // donc si checked=false → on ajoute, si checked=true → on retire
+          if(!cb.checked){ set.add(v); cb.checked = true; }
+          else { set.delete(v); cb.checked = false; }
+          if(set.size > 0) opsColumnFilters[col] = set;
+          else delete opsColumnFilters[col];
+          renderOpsTablePartial();
+          const currentInput = document.getElementById(searchId);
+          rebuildList(currentInput ? currentInput.value : "");
         });
-      }
+      });
+    }
+
+    input.addEventListener("input", (e) => {
+      e.stopPropagation();
+      opsColumnFilters[col + "__search"] = e.target.value;
+      rebuildList(e.target.value);
     });
-    filterCategorieInput.addEventListener("keydown", (e) => {
-      if(e.key === "Escape"){ openFilterMenu = null; render(); }
-      if(e.key === "Enter"){ openFilterMenu = null; render(); }
+    input.addEventListener("keydown", (e) => {
+      if(e.key === "Escape"){ delete opsColumnFilters[col + "__search"]; openFilterMenu = null; render(); }
+      if(e.key === "Enter") { delete opsColumnFilters[col + "__search"]; openFilterMenu = null; render(); }
       e.stopPropagation();
     });
-    filterCategorieInput.addEventListener("click", (e) => e.stopPropagation());
+    input.addEventListener("click", e => e.stopPropagation());
+
+    // Bouton "Effacer" inline
+    const clearInline = menu ? menu.querySelector(".filter-menu-clear-inline") : null;
+    if(clearInline){
+      clearInline.addEventListener("click", (e) => {
+        e.stopPropagation();
+        delete opsColumnFilters[col];
+        delete opsColumnFilters[col + "__search"];
+        openFilterMenu = null;
+        render();
+      });
+    }
+
+    // "Toutes les valeurs" (clear)
+    const clearAll = menu ? menu.querySelector(".filter-menu-clear") : null;
+    if(clearAll){
+      clearAll.addEventListener("click", (e) => {
+        e.stopPropagation();
+        delete opsColumnFilters[col];
+        delete opsColumnFilters[col + "__search"];
+        openFilterMenu = null;
+        render();
+      });
+    }
+
+    bindCheckboxes();
   }
+
+  bindMultiFilterMenu("libelle");
+  bindMultiFilterMenu("categorie");
 
   document.querySelectorAll(".filter-menu").forEach(menu => {
     menu.addEventListener("click", (e) => e.stopPropagation());
@@ -2682,9 +2732,15 @@ function attachDashboardEvents(){
     });
   });
 
-  // ---- Reset classement du mois ----
+  // ---- Reset catégorie (opérations sélectionnées) ----
   const btnResetMois = document.getElementById("btnResetMois");
-  if(btnResetMois) btnResetMois.addEventListener("click", () => openResetMoisConfirm());
+  if(btnResetMois) btnResetMois.addEventListener("click", () => {
+    if(selectedOpIds.size === 0){
+      showToast("Sélectionnez d'abord les opérations à réinitialiser.");
+      return;
+    }
+    openResetSelectionConfirm();
+  });
 
   // ---- Menu "Options du mois" (réinit opérations / suppression onglet) ----
   const btnMoisOptions = document.getElementById("btnMoisOptions");
@@ -2787,6 +2843,35 @@ function openSuppressionMoisConfirm(){
     overlay.remove();
     render();
     showToast(`Le mois ${label} a été supprimé.`);
+  });
+}
+
+function openResetSelectionConfirm(){
+  const moisKey = STATE.moisActif;
+  const n = selectedOpIds.size;
+  const overlay = document.createElement("div");
+  overlay.className = "modal-overlay open";
+  overlay.innerHTML = `
+    <div class="simple-modal-card">
+      <h3 class="display">Réinitialiser la catégorie ?</h3>
+      <p>${n} opération${n>1?'s':''} sélectionnée${n>1?'s':''} ${n>1?'seront remises':'sera remise'} à l'état "à classer". Les règles d'apprentissage ne sont pas supprimées.</p>
+      <div class="simple-modal-actions">
+        <button class="btn btn-ghost" id="cancelResetSel">Annuler</button>
+        <button class="btn btn-primary" id="confirmResetSel" style="background:var(--rouge);">Réinitialiser</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.addEventListener("click", (e) => { if(e.target===overlay) overlay.remove(); });
+  overlay.querySelector("#cancelResetSel").addEventListener("click", () => overlay.remove());
+  overlay.querySelector("#confirmResetSel").addEventListener("click", () => {
+    const ops = STATE.operations[moisKey] || [];
+    ops.forEach(op => { if(selectedOpIds.has(op.id)) op.categorie = null; });
+    selectedOpIds.clear();
+    saveState();
+    overlay.remove();
+    render();
+    showToast(`Catégorie réinitialisée pour ${n} opération${n>1?'s':''}.`);
   });
 }
 
