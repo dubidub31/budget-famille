@@ -1150,11 +1150,25 @@ function defaultState(){
 
 let STATE = null;
 
+function moisCourantKey(){
+  const now = new Date();
+  return now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
+}
+
+function autoSelectMoisCourant(){
+  const courant = moisCourantKey();
+  // Bascule sur le mois courant seulement s'il existe dans les données
+  if(STATE.operations && STATE.operations[courant]){
+    STATE.moisActif = courant;
+  }
+}
+
 function loadState(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
     if(raw){
       STATE = JSON.parse(raw);
+      autoSelectMoisCourant();
       return;
     }
   }catch(e){
