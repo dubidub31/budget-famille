@@ -784,27 +784,26 @@ async function initSync(){
   const remoteState = await pullFromSheets(true);
 
   if(remoteState){
-    // Compare les horodatages pour savoir quelle version est la plus récente
     const remoteTs = remoteState.__pushedAt ? new Date(remoteState.__pushedAt) : new Date(0);
     const localTs  = STATE.__pushedAt      ? new Date(STATE.__pushedAt)       : new Date(0);
 
     if(remoteTs > localTs){
-      // La version distante est plus récente : on l'adopte
       Object.assign(STATE, remoteState);
-      // Nettoyage des champs internes de sync avant de les utiliser comme STATE
       delete STATE.__updatedBy;
       delete STATE.__pushedAt;
-      saveState(); // met à jour le localStorage local
+      autoSelectMoisCourant();
+      saveState();
       render();
       showToast(`Données synchronisées depuis le cloud (${syncState.lastUpdatedBy || "dernier auteur"}).`);
     } else if(localTs > remoteTs){
-      // La version locale est plus récente (push en attente qui avait échoué ?)
-      // On repousse immédiatement pour remettre le Sheet à jour
       await pushToSheets();
       showToast("Données locales plus récentes : synchronisation vers le cloud.");
     }
-    // Si égales (ou remoteTs === epoch), pas d'action nécessaire
   }
+
+  // Dans tous les cas, s'assurer qu'on est sur le bon mois au premier render
+  autoSelectMoisCourant();
+  render();
 
   syncState.status = "ok";
   updateSyncIndicator();
@@ -891,6 +890,7 @@ async function forcePull(){
     Object.assign(STATE, remoteState);
     delete STATE.__updatedBy;
     delete STATE.__pushedAt;
+    autoSelectMoisCourant();
     saveState();
     render();
     showToast("Données rechargées depuis le cloud.");
@@ -1157,9 +1157,14 @@ function moisCourantKey(){
 
 function autoSelectMoisCourant(){
   const courant = moisCourantKey();
-  // Bascule sur le mois courant seulement s'il existe dans les données
-  if(STATE.operations && STATE.operations[courant]){
+  if(!STATE.moisListe || STATE.moisListe.length === 0) return;
+  // Prend le mois courant s'il existe, sinon le plus récent disponible
+  if(STATE.moisListe.includes(courant)){
     STATE.moisActif = courant;
+  } else {
+    // Prend le mois le plus récent dans la liste
+    const sorted = [...STATE.moisListe].sort();
+    STATE.moisActif = sorted[sorted.length - 1];
   }
 }
 
